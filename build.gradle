@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.5'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.github.node-gradle.node' version '7.1.0'
 }
 
 group = 'com.codelry.util'
@@ -27,7 +28,7 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation platform('org.testcontainers:testcontainers-bom:1.19.8')
+    testImplementation platform('org.testcontainers:testcontainers-bom:1.21.3')
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:testcontainers'
 }
@@ -38,4 +39,40 @@ test {
 
 tasks.test {
     enabled = true
+}
+
+tasks.register('runDev', NpxTask) {
+    dependsOn npmInstall
+    command = 'pm2'
+    args = ['start', 'npm', '--name', 'data-generator', '--', 'run', 'dev']
+}
+
+tasks.register('startDev', NpxTask) {
+    dependsOn npmInstall
+    command = 'pm2'
+    args = ['start', 'data-generator']
+}
+
+tasks.register('restartDev', NpxTask) {
+    dependsOn npmInstall
+    command = 'pm2'
+    args = ['restart', 'data-generator']
+}
+
+tasks.register('stopDev', NpxTask) {
+    dependsOn npmInstall
+    command = 'pm2'
+    args = ['stop', 'data-generator']
+}
+
+tasks.register('deleteDev', NpxTask) {
+    dependsOn npmInstall
+    command = 'pm2'
+    args = ['delete', 'data-generator']
+}
+
+tasks.register('pmList', NpxTask) {
+    dependsOn npmInstall
+    command = 'pm2'
+    args = ['list']
 }
