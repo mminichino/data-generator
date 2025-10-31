@@ -1,166 +1,181 @@
 'use client';
 
 import { useState } from 'react';
-import {
-    TableSchema,
-    ColumnDefinition,
-    ColumnType,
-    NumberOptions,
-    SetOptions,
-} from '../types/schema';
+import { TableSchema, ColumnDefinition } from '../types/schema';
 import ColumnEditor from './ColumnEditor';
 import { generateUUID } from '../lib/utils';
 
 interface SchemaEditorProps {
-    schema: TableSchema;
-    onSave: (schema: TableSchema) => void;
-    onCancel: () => void;
+  schema: TableSchema;
+  onSave: (schema: TableSchema) => void;
+  onCancel: () => void;
 }
 
-export default function SchemaEditor({
-                                         schema,
-                                         onSave,
-                                         onCancel,
-                                     }: SchemaEditorProps) {
-    const [editedSchema, setEditedSchema] = useState<TableSchema>(schema);
-    const [editingColumn, setEditingColumn] = useState<ColumnDefinition | null>(
-        null
-    );
+export default function SchemaEditor({ schema, onSave, onCancel }: SchemaEditorProps) {
+  const [editedSchema, setEditedSchema] = useState<TableSchema>(schema);
+  const [editingColumn, setEditingColumn] = useState<ColumnDefinition | null>(null);
+  const [showColumnEditor, setShowColumnEditor] = useState(false);
 
-    const handleAddColumn = () => {
-        const newColumn: ColumnDefinition = {
-            id: generateUUID(),
-            name: '',
-            type: 'text',
-            nullable: false,
-        };
-        setEditingColumn(newColumn);
+  const handleAddColumn = () => {
+    const newColumn: ColumnDefinition = {
+      id: generateUUID(),
+      name: '',
+      type: 'text',
+      nullable: true,
     };
+    setEditingColumn(newColumn);
+    setShowColumnEditor(true);
+  };
 
-    const handleEditColumn = (column: ColumnDefinition) => {
-        setEditingColumn(column);
-    };
+  const handleEditColumn = (column: ColumnDefinition) => {
+    setEditingColumn(column);
+    setShowColumnEditor(true);
+  };
 
-    const handleSaveColumn = (column: ColumnDefinition) => {
-        const existingIndex = editedSchema.columns.findIndex(
-            (c) => c.id === column.id
-        );
-        if (existingIndex >= 0) {
-            const newColumns = [...editedSchema.columns];
-            newColumns[existingIndex] = column;
-            setEditedSchema({ ...editedSchema, columns: newColumns });
-        } else {
-            setEditedSchema({
-                ...editedSchema,
-                columns: [...editedSchema.columns, column],
-            });
-        }
-        setEditingColumn(null);
-    };
+  const handleSaveColumn = (column: ColumnDefinition) => {
+    const existingIndex = editedSchema.columns.findIndex((c) => c.id === column.id);
+    if (existingIndex >= 0) {
+      const newColumns = [...editedSchema.columns];
+      newColumns[existingIndex] = column;
+      setEditedSchema({ ...editedSchema, columns: newColumns });
+    } else {
+      setEditedSchema({
+        ...editedSchema,
+        columns: [...editedSchema.columns, column],
+      });
+    }
+    setShowColumnEditor(false);
+    setEditingColumn(null);
+  };
 
-    const handleDeleteColumn = (columnId: string) => {
-        setEditedSchema({
-            ...editedSchema,
-            columns: editedSchema.columns.filter((c) => c.id !== columnId),
-        });
-    };
+  const handleDeleteColumn = (columnId: string) => {
+    setEditedSchema({
+      ...editedSchema,
+      columns: editedSchema.columns.filter((c) => c.id !== columnId),
+    });
+  };
 
-    const handleSave = () => {
-        if (!editedSchema.name.trim()) {
-            alert('Please enter a table name');
-            return;
-        }
-        if (editedSchema.columns.length === 0) {
-            alert('Please add at least one column');
-            return;
-        }
-        onSave(editedSchema);
-    };
+  const handleCancelColumn = () => {
+    setShowColumnEditor(false);
+    setEditingColumn(null);
+  };
 
-    return (
-        <div className="border rounded-lg p-6 bg-white shadow-lg">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">
-                {schema.name ? 'Edit Schema' : 'New Schema'}
-            </h2>
+  const handleSave = () => {
+    if (!editedSchema.name.trim()) {
+      alert('Schema name is required');
+      return;
+    }
+    if (editedSchema.columns.length === 0) {
+      alert('At least one column is required');
+      return;
+    }
+    onSave(editedSchema);
+  };
 
-            <div className="mb-6">
-                <label className="block text-sm font-medium mb-2 text-gray-800">Table Name</label>
-                <input
-                    type="text"
-                    value={editedSchema.name}
-                    onChange={(e) =>
-                        setEditedSchema({ ...editedSchema, name: e.target.value })
-                    }
-                    className="w-full border rounded px-3 py-2 text-gray-800"
-                    placeholder="e.g., users, products, orders"
-                />
+  return (
+    <div className="card">
+      <div className="card-header">
+        <h4 className="card-title">
+          {schema.name ? `Edit Schema: ${schema.name}` : 'Create New Schema'}
+        </h4>
+      </div>
+      <div className="card-body">
+        <div className="basic-form">
+          <div className="form-group mb-3">
+            <label className="form-label">Schema Name</label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Enter schema name"
+              value={editedSchema.name}
+              onChange={(e) =>
+                setEditedSchema({ ...editedSchema, name: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5>Columns</h5>
+            <button
+              onClick={handleAddColumn}
+              className="btn btn-primary btn-sm"
+            >
+              <i className="fa fa-plus me-2"></i>Add Column
+            </button>
+          </div>
+
+          {showColumnEditor && editingColumn ? (
+            <div className="mb-4">
+              <ColumnEditor
+                column={editingColumn}
+                onSave={handleSaveColumn}
+                onCancel={handleCancelColumn}
+              />
             </div>
+          ) : null}
 
-            <div className="mb-6">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-semibold text-gray-800">Columns</h3>
-                    <button
-                        onClick={handleAddColumn}
-                        className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                    >
-                        Add Column
-                    </button>
-                </div>
-
-                {editingColumn ? (
-                    <ColumnEditor
-                        column={editingColumn}
-                        onSave={handleSaveColumn}
-                        onCancel={() => setEditingColumn(null)}
-                    />
-                ) : (
-                    <div className="space-y-2">
-                        {editedSchema.columns.map((column) => (
-                            <div
-                                key={column.id}
-                                className="flex justify-between items-center border rounded p-3 bg-gray-50"
-                            >
-                                <div>
-                                    <span className="font-medium text-gray-800">{column.name}</span>
-                                    <span className="text-gray-800 ml-2">({column.type})</span>
-                                    {!column.nullable && (
-                                        <span className="text-red-500 ml-1">*</span>
-                                    )}
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => handleEditColumn(column)}
-                                        className="text-blue-600 hover:text-blue-800"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteColumn(column.id)}
-                                        className="text-red-600 hover:text-red-800"
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+          {editedSchema.columns.length > 0 ? (
+            <div className="table-responsive">
+              <table className="table table-responsive-md">
+                <thead>
+                  <tr>
+                    <th>Column Name</th>
+                    <th>Type</th>
+                    <th>Nullable</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {editedSchema.columns.map((column) => (
+                    <tr key={column.id}>
+                      <td><strong>{column.name}</strong></td>
+                      <td><span className="badge badge-primary">{column.type}</span></td>
+                      <td>
+                        {column.nullable ? (
+                          <span className="badge badge-success">Yes</span>
+                        ) : (
+                          <span className="badge badge-danger">No</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => handleEditColumn(column)}
+                          className="btn btn-warning btn-sm me-2"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete column "${column.name}"?`)) {
+                              handleDeleteColumn(column.id);
+                            }
+                          }}
+                          className="btn btn-danger btn-sm"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-
-            <div className="flex gap-3">
-                <button
-                    onClick={handleSave}
-                    className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
-                >
-                    Save Schema
-                </button>
-                <button
-                    onClick={onCancel}
-                    className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
-                >
-                    Cancel
-                </button>
+          ) : (
+            <div className="alert alert-info">
+              No columns added yet. Click "Add Column" to get started.
             </div>
+          )}
+
+          <div className="mt-4">
+            <button onClick={handleSave} className="btn btn-success me-2">
+              Save Schema
+            </button>
+            <button onClick={onCancel} className="btn btn-secondary">
+              Cancel
+            </button>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

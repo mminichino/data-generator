@@ -59,7 +59,7 @@ export interface DatabaseConnection {
 }
 
 export interface GenerateDataRequest {
-    schemas: TableSchema[];
+    schema: TableSchema;
     rowCount: number;
     connection?: DatabaseConnection;
 }

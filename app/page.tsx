@@ -42,81 +42,102 @@ export default function Home() {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Table Schemas</h1>
-        <button
-          onClick={handleCreateNew}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Create New Schema
-        </button>
-      </div>
-
-      {showEditor && editingSchema ? (
-        <SchemaEditor
-          schema={editingSchema}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
-      ) : (
-        <div className="space-y-4">
-          {schemas.length === 0 ? (
-            <div className="text-center py-12 text-gray-800">
-              No schemas created yet. Click "Create New Schema" to get started.
-            </div>
-          ) : (
-            schemas.map((schema) => (
-              <div
-                key={schema.id}
-                className="border rounded-lg p-4 bg-white shadow"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800">{schema.name}</h2>
-                    <p className="text-gray-800 mt-1">
-                      {schema.columns.length} column(s)
-                    </p>
-                    <div className="mt-2 space-y-1">
-                      {schema.columns.map((col) => (
-                        <div key={col.id} className="text-sm text-gray-800">
-                          <span className="font-medium">{col.name}</span>
-                          <span className="text-gray-800"> - {col.type}</span>
-                          {!col.nullable && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
-                        </div>
-                      ))}
+    <div className="row">
+      <div className="col-12">
+        <div className="card">
+          <div className="card-header">
+            <h4 className="card-title">Table Schemas</h4>
+            <button
+              onClick={handleCreateNew}
+              className="btn btn-primary"
+            >
+              + Create New Schema
+            </button>
+          </div>
+          <div className="card-body">
+            {showEditor && editingSchema ? (
+              <SchemaEditor
+                schema={editingSchema}
+                onSave={handleSave}
+                onCancel={handleCancel}
+              />
+            ) : (
+              <div className="row">
+                {schemas.length === 0 ? (
+                  <div className="col-12">
+                    <div className="text-center py-5">
+                      <p className="text-muted">No schemas created yet. Click "Create New Schema" to get started.</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEdit(schema)}
-                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (
-                          confirm(
-                            `Are you sure you want to delete "${schema.name}"?`
-                          )
-                        ) {
-                          deleteSchema(schema.id);
-                        }
-                      }}
-                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
+                ) : (
+                  schemas.map((schema) => (
+                    <div key={schema.id} className="col-xl-6 col-lg-12">
+                      <div className="card">
+                        <div className="card-header d-flex justify-content-between align-items-center">
+                          <h5 className="card-title">{schema.name}</h5>
+                          <div>
+                            <button
+                              onClick={() => handleEdit(schema)}
+                              className="btn btn-success btn-sm me-2"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (
+                                  confirm(
+                                    `Are you sure you want to delete "${schema.name}"?`
+                                  )
+                                ) {
+                                  deleteSchema(schema.id);
+                                }
+                              }}
+                              className="btn btn-danger btn-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                        <div className="card-body">
+                          <p className="text-muted mb-3">
+                            {schema.columns.length} column(s)
+                          </p>
+                          <div className="table-responsive">
+                            <table className="table table-responsive-md">
+                              <thead>
+                                <tr>
+                                  <th>Column Name</th>
+                                  <th>Type</th>
+                                  <th>Required</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {schema.columns.map((col) => (
+                                  <tr key={col.id}>
+                                    <td><strong>{col.name}</strong></td>
+                                    <td><span className="badge badge-primary">{col.type}</span></td>
+                                    <td>
+                                      {!col.nullable ? (
+                                        <span className="badge badge-danger">Required</span>
+                                      ) : (
+                                        <span className="badge badge-secondary">Optional</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-            ))
-          )}
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,12 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  ColumnDefinition,
-  ColumnType,
-  NumberOptions,
-  SetOptions,
-} from '../types/schema';
+import { ColumnDefinition, NumberOptions, SetOptions } from '../types/schema';
 
 interface ColumnEditorProps {
   column: ColumnDefinition;
@@ -14,295 +9,239 @@ interface ColumnEditorProps {
   onCancel: () => void;
 }
 
-const columnTypes: { value: ColumnType; label: string }[] = [
-  { value: 'number', label: 'Number' },
-  { value: 'uuid', label: 'UUID' },
-  { value: 'firstName', label: 'First Name' },
-  { value: 'lastName', label: 'Last Name' },
-  { value: 'fullName', label: 'Full Name' },
-  { value: 'set', label: 'Set' },
-  { value: 'zipcode', label: 'Zipcode' },
-  { value: 'dollarAmount', label: 'Dollar Amount' },
-  { value: 'streetNumber', label: 'Street Number' },
-  { value: 'streetAddress', label: 'Street Address' },
-  { value: 'city', label: 'City' },
-  { value: 'state', label: 'State (US)' },
-  { value: 'creditCard', label: 'Credit Card Number' },
-  { value: 'accountNumber', label: 'Account Number' },
-  { value: 'email', label: 'Email Address' },
-  { value: 'phoneNumber', label: 'Phone Number' },
-  { value: 'text', label: 'Text' },
-  { value: 'productName', label: 'Product Name' },
-  { value: 'productType', label: 'Product Type' },
-  { value: 'manufacturer', label: 'Manufacturer' },
-  { value: 'timestamp', label: 'Timestamp' },
-  { value: 'date', label: 'Date' },
-  { value: 'ipAddress', label: 'IP Address' },
-  { value: 'macAddress', label: 'MAC Address' },
-];
-
-export default function ColumnEditor({
-  column,
-  onSave,
-  onCancel,
-}: ColumnEditorProps) {
+export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorProps) {
   const [editedColumn, setEditedColumn] = useState<ColumnDefinition>(column);
-
-  const handleTypeChange = (type: ColumnType) => {
-    const newColumn = { ...editedColumn, type };
-    
-    // Initialize default options based on type
-    if (type === 'number' || type === 'dollarAmount') {
-      const numberOptions: NumberOptions = {
-        isDecimal: type === 'dollarAmount',
-        digits: type === 'dollarAmount' ? 10 : 5,
-        decimalPlaces: type === 'dollarAmount' ? 2 : undefined,
-      };
-      newColumn.options = numberOptions;
-    } else if (type === 'set') {
-      const setOptions: SetOptions = { members: [] };
-      newColumn.options = setOptions;
-    } else {
-      newColumn.options = undefined;
-    }
-    
-    setEditedColumn(newColumn);
-  };
 
   const handleSave = () => {
     if (!editedColumn.name.trim()) {
-      alert('Please enter a column name');
+      alert('Column name is required');
       return;
     }
-    
-    if (editedColumn.type === 'set') {
-      const setOptions = editedColumn.options as SetOptions;
-      if (!setOptions || setOptions.members.length === 0) {
-        alert('Please define at least one set member');
-        return;
-      }
-    }
-    
     onSave(editedColumn);
   };
 
-  const renderTypeSpecificOptions = () => {
-    if (editedColumn.type === 'number' || editedColumn.type === 'dollarAmount') {
-      const options = (editedColumn.options || {
-        isDecimal: false,
-        digits: 5,
-      }) as NumberOptions;
+  const handleTypeChange = (newType: ColumnDefinition['type']) => {
+    const updated = { ...editedColumn, type: newType };
 
-      return (
-        <div className="space-y-3 mt-4 p-4 bg-gray-50 rounded">
-          <div>
-            <label className="flex items-center text-gray-800">
-              <input
-                type="checkbox"
-                checked={options.isDecimal}
-                onChange={(e) =>
-                  setEditedColumn({
-                    ...editedColumn,
-                    options: {
-                      ...options,
-                      isDecimal: e.target.checked,
-                      decimalPlaces: e.target.checked ? 2 : undefined,
-                    },
-                  })
-                }
-                className="mr-2"
-              />
-              Decimal Number
-            </label>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-800">
-              Total Digits
-            </label>
-            <input
-              type="number"
-              value={options.digits}
-              onChange={(e) =>
-                setEditedColumn({
-                  ...editedColumn,
-                  options: {
-                    ...options,
-                    digits: parseInt(e.target.value) || 1,
-                  },
-                })
-              }
-              min="1"
-              max="20"
-              className="w-full border rounded px-3 py-2 text-gray-800"
-            />
-          </div>
-          {options.isDecimal && (
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-800">
-                Decimal Places
-              </label>
-              <input
-                type="number"
-                value={options.decimalPlaces || 2}
-                onChange={(e) =>
-                  setEditedColumn({
-                    ...editedColumn,
-                    options: {
-                      ...options,
-                      decimalPlaces: parseInt(e.target.value) || 0,
-                    },
-                  })
-                }
-                min="0"
-                max="10"
-                className="w-full border rounded px-3 py-2 text-gray-800"
-              />
-            </div>
-          )}
-        </div>
-      );
+    if (newType === 'number' && !updated.options) {
+      updated.options = { isDecimal: false, digits: 5 } as NumberOptions;
+    } else if (newType === 'set' && !updated.options) {
+      updated.options = { members: [''] } as SetOptions;
+    } else if (newType !== 'number' && newType !== 'set') {
+      updated.options = undefined;
     }
+    
+    setEditedColumn(updated);
+  };
 
-    if (editedColumn.type === 'set') {
-      const options = (editedColumn.options || { members: [] }) as SetOptions;
-      const [newMember, setNewMember] = useState('');
+  const updateNumberOptions = (updates: Partial<NumberOptions>) => {
+    const currentOptions = (editedColumn.options as NumberOptions) || { isDecimal: false, digits: 5 };
+    setEditedColumn({
+      ...editedColumn,
+      options: { ...currentOptions, ...updates }
+    });
+  };
 
-      return (
-        <div className="mt-4 p-4 bg-gray-50 rounded">
-          <label className="block text-sm font-medium mb-2 text-gray-800">Set Members</label>
-          <div className="flex gap-2 mb-3">
-            <input
-              type="text"
-              value={newMember}
-              onChange={(e) => setNewMember(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && newMember.trim()) {
-                  setEditedColumn({
-                    ...editedColumn,
-                    options: {
-                      members: [...options.members, newMember.trim()],
-                    },
-                  });
-                  setNewMember('');
-                }
-              }}
-              placeholder="Enter member and press Enter"
-              className="flex-1 border rounded px-3 py-2 text-gray-800"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                if (newMember.trim()) {
-                  setEditedColumn({
-                    ...editedColumn,
-                    options: {
-                      members: [...options.members, newMember.trim()],
-                    },
-                  });
-                  setNewMember('');
-                }
-              }}
-              className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
-            >
-              Add
-            </button>
-          </div>
-          <div className="space-y-1">
-            {options.members.map((member, index) => (
-              <div
-                key={index}
-                className="flex justify-between items-center bg-white p-2 rounded"
-              >
-                <span className="text-gray-800">{member}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newMembers = options.members.filter(
-                      (_, i) => i !== index
-                    );
-                    setEditedColumn({
-                      ...editedColumn,
-                      options: { members: newMembers },
-                    });
-                  }}
-                  className="text-red-600 hover:text-red-800 text-sm"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
+  const updateSetOptions = (members: string[]) => {
+    setEditedColumn({
+      ...editedColumn,
+      options: { members } as SetOptions
+    });
+  };
 
-    return null;
+  const addSetMember = () => {
+    const currentMembers = ((editedColumn.options as SetOptions)?.members || []);
+    updateSetOptions([...currentMembers, '']);
+  };
+
+  const updateSetMember = (index: number, value: string) => {
+    const currentMembers = [...((editedColumn.options as SetOptions)?.members || [])];
+    currentMembers[index] = value;
+    updateSetOptions(currentMembers);
+  };
+
+  const removeSetMember = (index: number) => {
+    const currentMembers = ((editedColumn.options as SetOptions)?.members || []);
+    updateSetOptions(currentMembers.filter((_, i) => i !== index));
   };
 
   return (
-    <div className="border-2 border-blue-500 rounded-lg p-4 bg-blue-50 mb-4">
-      <h4 className="text-lg font-semibold mb-4 text-gray-800">
-        {column.name ? 'Edit Column' : 'New Column'}
-      </h4>
+    <div className="card border-primary">
+      <div className="card-header">
+        <h5 className="card-title">
+          {column.name ? `Edit Column: ${column.name}` : 'Add New Column'}
+        </h5>
+      </div>
+      <div className="card-body">
+        <div className="basic-form">
+          <div className="row">
+            <div className="col-md-6">
+              <div className="form-group mb-3">
+                <label className="form-label">Column Name</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter column name"
+                  value={editedColumn.name}
+                  onChange={(e) =>
+                    setEditedColumn({ ...editedColumn, name: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="form-group mb-3">
+                <label className="form-label">Data Type</label>
+                <select
+                  className="form-control"
+                  value={editedColumn.type}
+                  onChange={(e) => handleTypeChange(e.target.value as ColumnDefinition['type'])}
+                >
+                  <option value="text">Text</option>
+                  <option value="number">Number</option>
+                  <option value="uuid">UUID</option>
+                  <option value="firstName">First Name</option>
+                  <option value="lastName">Last Name</option>
+                  <option value="fullName">Full Name</option>
+                  <option value="email">Email</option>
+                  <option value="phoneNumber">Phone Number</option>
+                  <option value="streetAddress">Street Address</option>
+                  <option value="city">City</option>
+                  <option value="state">State</option>
+                  <option value="zipcode">Zip Code</option>
+                  <option value="creditCard">Credit Card</option>
+                  <option value="accountNumber">Account Number</option>
+                  <option value="dollarAmount">Dollar Amount</option>
+                  <option value="productName">Product Name</option>
+                  <option value="productType">Product Type</option>
+                  <option value="manufacturer">Manufacturer</option>
+                  <option value="date">Date</option>
+                  <option value="timestamp">Timestamp</option>
+                  <option value="ipAddress">IP Address</option>
+                  <option value="macAddress">MAC Address</option>
+                  <option value="set">Set</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-800">Column Name</label>
-          <input
-            type="text"
-            value={editedColumn.name}
-            onChange={(e) =>
-              setEditedColumn({ ...editedColumn, name: e.target.value })
-            }
-            className="w-full border rounded px-3 py-2 text-gray-800"
-            placeholder="e.g., user_id, email, created_at"
-          />
-        </div>
+          {editedColumn.type === 'number' && (
+            <div className="card mb-3 bg-light">
+              <div className="card-body">
+                <h6 className="card-subtitle mb-3">Number Options</h6>
+                <div className="row">
+                  <div className="col-md-4">
+                    <div className="form-group mb-3">
+                      <label className="form-label">Digits</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        min="1"
+                        max="20"
+                        value={(editedColumn.options as NumberOptions)?.digits || 5}
+                        onChange={(e) => updateNumberOptions({ digits: parseInt(e.target.value) || 5 })}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="form-check mt-4">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id="isDecimal"
+                        checked={(editedColumn.options as NumberOptions)?.isDecimal || false}
+                        onChange={(e) => updateNumberOptions({ isDecimal: e.target.checked })}
+                      />
+                      <label className="form-check-label" htmlFor="isDecimal">
+                        Is Decimal
+                      </label>
+                    </div>
+                  </div>
+                  {(editedColumn.options as NumberOptions)?.isDecimal && (
+                    <div className="col-md-4">
+                      <div className="form-group mb-3">
+                        <label className="form-label">Decimal Places</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          min="1"
+                          max="10"
+                          value={(editedColumn.options as NumberOptions)?.decimalPlaces || 2}
+                          onChange={(e) => updateNumberOptions({ decimalPlaces: parseInt(e.target.value) || 2 })}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
-        <div>
-          <label className="block text-sm font-medium mb-1 text-gray-800">Column Type</label>
-          <select
-            value={editedColumn.type}
-            onChange={(e) => handleTypeChange(e.target.value as ColumnType)}
-            className="w-full border rounded px-3 py-2 text-gray-800"
-          >
-            {columnTypes.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
-        </div>
+          {editedColumn.type === 'set' && (
+            <div className="card mb-3 bg-light">
+              <div className="card-body">
+                <h6 className="card-subtitle mb-3">Set Members</h6>
+                {((editedColumn.options as SetOptions)?.members || []).map((member, index) => (
+                  <div key={index} className="row mb-2">
+                    <div className="col-10">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter set member value"
+                        value={member}
+                        onChange={(e) => updateSetMember(index, e.target.value)}
+                      />
+                    </div>
+                    <div className="col-2">
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm w-100"
+                        onClick={() => removeSetMember(index)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary mt-2"
+                  onClick={addSetMember}
+                >
+                  + Add Member
+                </button>
+              </div>
+            </div>
+          )}
 
-        <div>
-          <label className="flex items-center text-gray-800">
-            <input
-              type="checkbox"
-              checked={editedColumn.nullable}
-              onChange={(e) =>
-                setEditedColumn({ ...editedColumn, nullable: e.target.checked })
-              }
-              className="mr-2"
-            />
-            Nullable
-          </label>
-        </div>
+          <div className="form-group mb-3">
+            <div className="form-check">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                id="nullable"
+                checked={editedColumn.nullable}
+                onChange={(e) =>
+                  setEditedColumn({
+                    ...editedColumn,
+                    nullable: e.target.checked,
+                  })
+                }
+              />
+              <label className="form-check-label" htmlFor="nullable">
+                Allow null values
+              </label>
+            </div>
+          </div>
 
-        {renderTypeSpecificOptions()}
-
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={handleSave}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            Save Column
-          </button>
-          <button
-            onClick={onCancel}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-          >
-            Cancel
-          </button>
+          <div className="mt-3">
+            <button onClick={handleSave} className="btn btn-primary me-2">
+              Save Column
+            </button>
+            <button onClick={onCancel} className="btn btn-light">
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GenerateDataRequest, ColumnDefinition, ColumnType } from '../../types/schema';
 import { generateUUID } from '../../lib/utils';
+import https from 'https';
 
 // Fake data generators
 const generators: Record<
@@ -105,24 +106,44 @@ function generateValue(column: ColumnDefinition): any {
 export async function POST(request: NextRequest) {
     try {
         const body: GenerateDataRequest = await request.json();
-        const { schemas, rowCount, connection } = body;
+        const { schema, rowCount, connection } = body;
 
         const data: Record<string, any[]> = {};
 
-        for (const schema of schemas) {
-            const rows = [];
-            for (let i = 0; i < rowCount; i++) {
-                const row: Record<string, any> = {};
-                for (const column of schema.columns) {
-                    row[column.name] = generateValue(column);
-                }
-                rows.push(row);
+        const rows = [];
+        for (let i = 0; i < rowCount; i++) {
+            const row: Record<string, any> = {};
+            for (const column of schema.columns) {
+                row[column.name] = generateValue(column);
             }
-            data[schema.name] = rows;
+            rows.push(row);
+        }
+        data[schema.name] = rows;
+
+        try {
+            const backendResponse = await fetch('http://localhost:8084/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    schema: schema,
+                    count: rowCount,
+                    connection: connection,
+                }),
+            });
+
+            if (!backendResponse.ok) {
+                throw new Error(`Backend responded with status: ${backendResponse.status}`);
+            }
+
+            const result = await backendResponse.json();
+            console.log('Backend response:', result);
+        } catch (error) {
+            console.error('Error calling backend:', error);
         }
 
-        // TODO: Implement actual database insertion logic here
-        let message = `Generated ${rowCount} rows for ${schemas.length} table(s)`;
+        let message = `Generated ${rowCount} rows`;
 
         if (connection) {
             message += ` (Database insertion not yet implemented - would insert to ${connection.database})`;
