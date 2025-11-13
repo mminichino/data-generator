@@ -44,7 +44,7 @@ export default function ConnectionPage() {
     const checkStatus = async () => {
       try {
         setStatusChecking(true);
-        const res = await fetch('http://localhost:8084/api/database/status');
+        const res = await fetch('/api/database/status');
         if (res.ok) {
           const json = await res.json();
           setConnected(Boolean(json?.connected));
@@ -72,7 +72,7 @@ export default function ConnectionPage() {
         schema,
         useSsl,
       };
-      const res = await fetch('http://localhost:8084/api/database/connect', {
+      const res = await fetch('/api/database/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
