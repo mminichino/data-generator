@@ -3,11 +3,30 @@ import { GenerateDataRequest, ColumnDefinition, ColumnType } from '../../types/s
 import { generateUUID } from '../../lib/utils';
 import https from 'https';
 
+const getNextSequenceNumber = (function() {
+    let counter = 0; // Initial value
+
+    return function() {
+        return counter++;
+    };
+})();
+
 // Fake data generators
 const generators: Record<
     ColumnType,
     (options?: any) => string | number
 > = {
+    sequentialNumber: () => {
+        return getNextSequenceNumber();
+    },
+    boolean: () => {
+        const result = Math.random() >= 0.5;
+        if (result) {
+            return 'true';
+        } else {
+            return 'false';
+        }
+    },
     number: (options) => {
         const { isDecimal, digits, decimalPlaces } = options || { isDecimal: false, digits: 5 };
         if (isDecimal) {

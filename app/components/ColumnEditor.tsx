@@ -97,8 +97,10 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
                   value={editedColumn.type}
                   onChange={(e) => handleTypeChange(e.target.value as ColumnDefinition['type'])}
                 >
+                  <option value="sequentialNumber">Sequential Number</option>
                   <option value="text">Text</option>
                   <option value="number">Number</option>
+                  <option value="boolean">Boolean</option>
                   <option value="uuid">UUID</option>
                   <option value="firstName">First Name</option>
                   <option value="lastName">Last Name</option>

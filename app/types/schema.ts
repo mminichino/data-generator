@@ -1,5 +1,7 @@
 
 export type ColumnType =
+    | 'sequentialNumber'
+    | 'boolean'
     | 'number'
     | 'uuid'
     | 'firstName'
