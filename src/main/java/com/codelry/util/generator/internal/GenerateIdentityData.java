@@ -147,4 +147,81 @@ public class GenerateIdentityData {
       return new ArrayList<>(addressList.subList(0, total));
     }
   }
+
+  static class ProductRecord {
+
+    @StructuredPrompt({
+        "Generate {{count}} unique synthetic product records as they might appear in an inventory management system. ",
+        "Use the following departments: ",
+            "Apparel",
+            "Electronics",
+            "Home Furnishings",
+            "Food and Beverage",
+            "Health and Beauty",
+            "Sports and Outdoors",
+            "Toys and Games",
+            "Media and Entertainment",
+            "Automotive",
+            "Baby and Kids",
+            "Pet Supplies",
+            "Office Supplies",
+            "Garden and Outdoor",
+            "Hardware and Tools",
+        "While this is a synthetic data set, use real manufacturers, and real products based on available public data. ",
+        "Create synthetic SKUs following a pattern that could be seen in a real inventory system.",
+        "For the price use realistic list prices if publicly available or a reasonable guess. ",
+        "Use a reasonable guess for the cost. ",
+        "Structure your answer as a JSON list without any markdown with each JSON object formatted in the following way: ",
+
+        "{",
+        "department: (text) The product department",
+        "manufacturer: (text) The name of the company that makes the product",
+        "category: (text) The product category",
+        "subcategory: (text) The product subcategory",
+        "sku: (text) The product SKU",
+        "name: (text) THe product model or name",
+        "seasonal: (boolean) [true or false] If the product is a seasonal item",
+        "price: (float) The product price to the consumer",
+        "cost: (float) The cost to produce or manufacture the product",
+        "}"
+    })
+    static class CreateProductPrompt {
+      private int count;
+    }
+
+    interface Assistant {
+      String chat(String message);
+    }
+
+    public static List<JsonNode> run(int iterations, int count) {
+      ChatMemory chatMemory = MessageWindowChatMemory.withMaxMessages(10);
+      List<JsonNode> productList = new ArrayList<>();
+      int total = count * iterations;
+
+      CreateProductPrompt productPrompt = new CreateProductPrompt();
+      productPrompt.count = count;
+      Prompt prompt = StructuredPromptProcessor.toPrompt(productPrompt);
+
+      Assistant assistant = AiServices.builder(Assistant.class)
+          .chatModel(model)
+          .chatMemory(chatMemory)
+          .build();
+
+      ProgressOutput progress = new ProgressOutput(total);
+      progress.init();
+      while (productList.size() < total) {
+        try {
+          String answer = assistant.chat(prompt.toUserMessage().toString());
+          List<JsonNode> batch = mapper.readValue(answer, typeFactory.constructCollectionType(List.class, JsonNode.class));
+          progress.writeLine(batch.size());
+          productList.addAll(batch);
+        } catch (Exception e) {
+          progress.incrementErrorCount();
+          LOGGER.debug(e.getMessage(), e);
+        }
+      }
+      progress.newLine();
+      return new ArrayList<>(productList.subList(0, total));
+    }
+  }
 }
