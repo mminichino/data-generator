@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ColumnDefinition, NumberOptions, SetOptions } from '../types/schema';
 
 interface ColumnEditorProps {
@@ -65,6 +65,13 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
     updateSetOptions(currentMembers.filter((_, i) => i !== index));
   };
 
+  // Ensure mutually exclusive Primary Key and Nullable on initial load/changes
+  useEffect(() => {
+    if (editedColumn.primaryKey && editedColumn.nullable) {
+      setEditedColumn((prev) => ({ ...prev, nullable: false }));
+    }
+  }, [editedColumn.primaryKey, editedColumn.nullable]);
+
   return (
     <div className="card border-primary">
       <div className="card-header">
@@ -123,6 +130,53 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
                   <option value="macAddress">MAC Address</option>
                   <option value="set">Set</option>
                 </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="row">
+            <div className="col-md-6">
+              <div className="form-check mb-3">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id={`primaryKey-${editedColumn.id}`}
+                  checked={!!editedColumn.primaryKey}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setEditedColumn({
+                      ...editedColumn,
+                      primaryKey: checked,
+                      // Primary Key cannot be nullable
+                      nullable: checked ? false : editedColumn.nullable,
+                    });
+                  }}
+                />
+                <label className="form-check-label" htmlFor={`primaryKey-${editedColumn.id}`}>
+                  Primary Key
+                </label>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="form-check mb-3">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id={`nullable-${editedColumn.id}`}
+                  checked={!!editedColumn.nullable}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setEditedColumn({
+                      ...editedColumn,
+                      nullable: checked,
+                      // If allowing nulls, ensure primary key is unset
+                      primaryKey: checked ? false : editedColumn.primaryKey,
+                    });
+                  }}
+                />
+                <label className="form-check-label" htmlFor={`nullable-${editedColumn.id}`}>
+                  Allow null values (nullable)
+                </label>
               </div>
             </div>
           </div>
@@ -215,26 +269,6 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
               </div>
             </div>
           )}
-
-          <div className="form-group mb-3">
-            <div className="form-check">
-              <input
-                type="checkbox"
-                className="form-check-input"
-                id="nullable"
-                checked={editedColumn.nullable}
-                onChange={(e) =>
-                  setEditedColumn({
-                    ...editedColumn,
-                    nullable: e.target.checked,
-                  })
-                }
-              />
-              <label className="form-check-label" htmlFor="nullable">
-                Allow null values
-              </label>
-            </div>
-          </div>
 
           <div className="mt-3">
             <button onClick={handleSave} className="btn btn-primary me-2">

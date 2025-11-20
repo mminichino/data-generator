@@ -1,6 +1,8 @@
 package com.codelry.util.generator.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
+import java.util.Map;
 
 public class GenerateResponse {
 
@@ -13,6 +15,9 @@ public class GenerateResponse {
   @JsonProperty("timestamp")
   private long timestamp;
 
+  @JsonProperty("samples")
+  private List<Map<String, Object>> samples;
+
   public GenerateResponse() {
     this.timestamp = System.currentTimeMillis();
   }
@@ -20,6 +25,13 @@ public class GenerateResponse {
   public GenerateResponse(String status, String result) {
     this.status = status;
     this.result = result;
+    this.timestamp = System.currentTimeMillis();
+  }
+
+  public GenerateResponse(String status, String result, List<Map<String, Object>> samples) {
+    this.status = status;
+    this.result = result;
+    this.samples = samples;
     this.timestamp = System.currentTimeMillis();
   }
 
@@ -45,5 +57,13 @@ public class GenerateResponse {
 
   public void setTimestamp(long timestamp) {
     this.timestamp = timestamp;
+  }
+
+  public List<Map<String, Object>> getSamples() {
+    return samples;
+  }
+
+  public void setSamples(List<Map<String, Object>> samples) {
+    this.samples = samples;
   }
 }

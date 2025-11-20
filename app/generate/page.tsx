@@ -2,20 +2,27 @@
 
 import { useState } from 'react';
 import { useSchemaStore } from '../store/SchemaStore';
+import { SchemaCollection, TableSchema } from '../types/schema';
 
 export default function GeneratePage() {
-  const { schemas, connection } = useSchemaStore();
+  const { schemas } = useSchemaStore();
   const [selectedSchema, setSelectedSchema] = useState('');
   const [rowCount, setRowCount] = useState(100);
   const [generatedData, setGeneratedData] = useState<any[]>([]);
 
   const handleGenerate = async () => {
-    const schema = schemas.find(s => s.id === selectedSchema);
+    const schemaCollection = schemas.find(s => s.id === selectedSchema);
 
-    if (!schema) {
+    if (!schemaCollection) {
       alert('Please select a schema');
       return;
     }
+
+    // apply rowCount per table
+    const payload: SchemaCollection = {
+      ...schemaCollection,
+      tables: (schemaCollection.tables || []).map((t: TableSchema) => ({ ...t, count: rowCount })),
+    };
 
     try {
       const response = await fetch('/api/generate', {
@@ -23,27 +30,19 @@ export default function GeneratePage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          schema: schema,
-          rowCount,
-          connection,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate data');
+        const err = await response.json().catch(() => ({}));
+        console.error('Failed to connect:', err);
+        throw new Error(err?.message || 'Failed to connect');
       }
 
       const result = await response.json();
-      const tableData = result.data[schema.name];
-
-      if (!tableData || !Array.isArray(tableData)) {
-        throw new Error('Invalid data format received from server');
-      }
-
-      setGeneratedData(tableData);
-      alert(`Generated ${tableData.length} rows successfully!`);
+      // For now, backend returns a success message; you can extend to include generated data per table later.
+      console.log('Generate result:', result);
+      alert(`Generated data successfully!`);
     } catch (error) {
       console.error('Error generating data:', error);
       alert('Failed to generate data');

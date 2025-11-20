@@ -42,13 +42,23 @@ export interface ColumnDefinition {
     name: string;
     type: ColumnType;
     nullable: boolean;
+    primaryKey?: boolean;
     options?: NumberOptions | SetOptions;
 }
 
 export interface TableSchema {
     id: string;
     name: string;
+    count?: number;
+    keyFormat?: string;
     columns: ColumnDefinition[];
+}
+
+export interface SchemaCollection {
+    id: string;
+    name: string;
+    nosql: boolean;
+    tables: TableSchema[];
 }
 
 export interface DatabaseConnection {
@@ -61,7 +71,7 @@ export interface DatabaseConnection {
 }
 
 export interface GenerateDataRequest {
-    schema: TableSchema;
+    schema: SchemaCollection;
     rowCount: number;
     connection?: DatabaseConnection;
 }

@@ -2,31 +2,32 @@
 
 import { useState } from 'react';
 import { useSchemaStore } from './store/SchemaStore';
-import { TableSchema, ColumnDefinition } from './types/schema';
-import SchemaEditor from './components/SchemaEditor';
+import { SchemaCollection } from './types/schema';
+import SchemaCollectionEditor from './components/SchemaCollectionEditor';
 import { generateUUID } from './lib/utils';
 
 export default function Home() {
   const { schemas, addSchema, updateSchema, deleteSchema } = useSchemaStore();
-  const [editingSchema, setEditingSchema] = useState<TableSchema | null>(null);
+  const [editingSchema, setEditingSchema] = useState<SchemaCollection | null>(null);
   const [showEditor, setShowEditor] = useState(false);
 
   const handleCreateNew = () => {
-    const newSchema: TableSchema = {
+    const newSchema: SchemaCollection = {
       id: generateUUID(),
       name: '',
-      columns: [],
+      nosql: false,
+      tables: [],
     };
     setEditingSchema(newSchema);
     setShowEditor(true);
   };
 
-  const handleEdit = (schema: TableSchema) => {
+  const handleEdit = (schema: SchemaCollection) => {
     setEditingSchema(schema);
     setShowEditor(true);
   };
 
-  const handleSave = (schema: TableSchema) => {
+  const handleSave = (schema: SchemaCollection) => {
     if (schemas.find((s) => s.id === schema.id)) {
       updateSchema(schema.id, schema);
     } else {
@@ -56,7 +57,7 @@ export default function Home() {
           </div>
           <div className="card-body">
             {showEditor && editingSchema ? (
-              <SchemaEditor
+              <SchemaCollectionEditor
                 schema={editingSchema}
                 onSave={handleSave}
                 onCancel={handleCancel}
@@ -99,35 +100,27 @@ export default function Home() {
                           </div>
                         </div>
                         <div className="card-body">
-                          <p className="text-muted mb-3">
-                            {schema.columns.length} column(s)
-                          </p>
-                          <div className="table-responsive">
-                            <table className="table table-responsive-md">
-                              <thead>
-                                <tr>
-                                  <th>Column Name</th>
-                                  <th>Type</th>
-                                  <th>Required</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {schema.columns.map((col) => (
-                                  <tr key={col.id}>
-                                    <td><strong>{col.name}</strong></td>
-                                    <td><span className="badge badge-primary">{col.type}</span></td>
-                                    <td>
-                                      {!col.nullable ? (
-                                        <span className="badge badge-danger">Required</span>
-                                      ) : (
-                                        <span className="badge badge-secondary">Optional</span>
-                                      )}
-                                    </td>
+                          <p className="text-muted mb-3">{schema.tables.length} table(s)</p>
+                          {schema.tables.length > 0 && (
+                            <div className="table-responsive">
+                              <table className="table table-responsive-md">
+                                <thead>
+                                  <tr>
+                                    <th>Table Name</th>
+                                    <th>Columns</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                </thead>
+                                <tbody>
+                                  {schema.tables.map((t) => (
+                                    <tr key={t.id}>
+                                      <td><strong>{t.name}</strong></td>
+                                      <td><span className="badge badge-primary">{t.columns.length}</span></td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

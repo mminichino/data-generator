@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TableSchema, ColumnDefinition } from '../types/schema';
 import ColumnEditor from './ColumnEditor';
 import { generateUUID } from '../lib/utils';
@@ -9,12 +9,32 @@ interface SchemaEditorProps {
   schema: TableSchema;
   onSave: (schema: TableSchema) => void;
   onCancel: () => void;
+  nosql?: boolean;
 }
 
-export default function SchemaEditor({ schema, onSave, onCancel }: SchemaEditorProps) {
+export default function SchemaEditor({ schema, onSave, onCancel, nosql = false }: SchemaEditorProps) {
   const [editedSchema, setEditedSchema] = useState<TableSchema>(schema);
   const [editingColumn, setEditingColumn] = useState<ColumnDefinition | null>(null);
   const [showColumnEditor, setShowColumnEditor] = useState(false);
+  const prevNameRef = useRef<string>(schema.name);
+
+  useEffect(() => {
+    if (nosql && !editedSchema.keyFormat) {
+      setEditedSchema((prev) => ({ ...prev, keyFormat: `'${prev.name}', $uuid` }));
+    }
+  }, [nosql]);
+
+  useEffect(() => {
+    const prevName = prevNameRef.current;
+    if (!nosql) return;
+    const currentKF = editedSchema.keyFormat || '';
+    const prevDefault = `'${prevName}', $uuid`;
+    const shouldUpdateKF = !currentKF || currentKF === prevDefault;
+    if (shouldUpdateKF) {
+      setEditedSchema((prev) => ({ ...prev, keyFormat: `'${prev.name}', $uuid` }));
+    }
+    prevNameRef.current = editedSchema.name;
+  }, [editedSchema.name, nosql]);
 
   const handleAddColumn = () => {
     const newColumn: ColumnDefinition = {
@@ -69,30 +89,46 @@ export default function SchemaEditor({ schema, onSave, onCancel }: SchemaEditorP
       alert('At least one column is required');
       return;
     }
-    onSave(editedSchema);
+
+    const payload: TableSchema = nosql ? editedSchema : { ...editedSchema, keyFormat: undefined } as TableSchema;
+    onSave(payload);
   };
 
   return (
     <div className="card">
       <div className="card-header">
         <h4 className="card-title">
-          {schema.name ? `Edit Schema: ${schema.name}` : 'Create New Schema'}
+          {schema.name ? `Edit Table: ${schema.name}` : 'Create New Table'}
         </h4>
       </div>
       <div className="card-body">
         <div className="basic-form">
           <div className="form-group mb-3">
-            <label className="form-label">Schema Name</label>
+            <label className="form-label">Table Name</label>
             <input
               type="text"
               className="form-control"
-              placeholder="Enter schema name"
+              placeholder="Enter table name"
               value={editedSchema.name}
               onChange={(e) =>
                 setEditedSchema({ ...editedSchema, name: e.target.value })
               }
             />
           </div>
+
+          {nosql && (
+            <div className="form-group mb-3">
+              <label className="form-label">Key Format</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="'table_name', $uuid"
+                value={editedSchema.keyFormat || ''}
+                onChange={(e) => setEditedSchema({ ...editedSchema, keyFormat: e.target.value })}
+              />
+              <small className="form-text text-muted">Default: '{editedSchema.name}', $uuid</small>
+            </div>
+          )}
 
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5>Columns</h5>

@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { TableSchema, DatabaseConnection } from '../types/schema';
+import { SchemaCollection, DatabaseConnection } from '../types/schema';
 
 interface SchemaStore {
-    schemas: TableSchema[];
+    schemas: SchemaCollection[];
     connection: DatabaseConnection | null;
-    addSchema: (schema: TableSchema) => void;
-    updateSchema: (id: string, schema: TableSchema) => void;
+    addSchema: (schema: SchemaCollection) => void;
+    updateSchema: (id: string, schema: SchemaCollection) => void;
     deleteSchema: (id: string) => void;
     setConnection: (connection: DatabaseConnection) => void;
     clearSchemas: () => void;
@@ -31,7 +31,7 @@ export const useSchemaStore = create<SchemaStore>()(
             clearSchemas: () => set({ schemas: [] }),
         }),
         {
-            name: 'schema-storage',
+            name: 'schema-collection-storage',
         }
     )
 );
