@@ -1,9 +1,12 @@
 package com.codelry.util.generator.internal;
 
+import com.codelry.util.generator.util.JsonUtils;
 import com.codelry.util.generator.util.ProgressOutput;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.input.Prompt;
@@ -11,14 +14,15 @@ import dev.langchain4j.model.input.structured.StructuredPrompt;
 import dev.langchain4j.model.input.structured.StructuredPromptProcessor;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
+import dev.langchain4j.exception.TimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 import static dev.langchain4j.model.openai.OpenAiChatModelName.GPT_5;
-import static java.time.Duration.ofSeconds;
 
 public class GenerateIdentityData {
   private static final Logger LOGGER = LogManager.getLogger(GenerateIdentityData.class);
@@ -27,8 +31,9 @@ public class GenerateIdentityData {
   static OpenAiChatModel model = OpenAiChatModel.builder()
       .apiKey(ApiKeys.OPENAI_API_KEY)
       .modelName(GPT_5)
-      .timeout(ofSeconds(180))
-      .maxTokens(4096)
+      .timeout(Duration.ofSeconds(180))
+      .maxCompletionTokens(10240)
+      .listeners(List.of(new TelemetryListener()))
       .build();
 
   public GenerateIdentityData() {}
@@ -39,6 +44,10 @@ public class GenerateIdentityData {
 
   public List<JsonNode> generateAddresses(int iterations, int count) {
     return SimpleAddressRecord.run(iterations, count);
+  }
+
+  public List<JsonNode> generateProducts(int iterations, int count, String department) {
+    return ProductRecord.run(iterations, count, department);
   }
 
   static class SimpleNameRecord {
@@ -150,76 +159,65 @@ public class GenerateIdentityData {
 
   static class ProductRecord {
 
-    @StructuredPrompt({
-        "Generate {{count}} unique synthetic product records as they might appear in an inventory management system. ",
-        "Use the following departments: ",
-            "Apparel",
-            "Electronics",
-            "Home Furnishings",
-            "Food and Beverage",
-            "Health and Beauty",
-            "Sports and Outdoors",
-            "Toys and Games",
-            "Media and Entertainment",
-            "Automotive",
-            "Baby and Kids",
-            "Pet Supplies",
-            "Office Supplies",
-            "Garden and Outdoor",
-            "Hardware and Tools",
-        "While this is a synthetic data set, use real manufacturers, and real products based on available public data. ",
-        "Create synthetic SKUs following a pattern that could be seen in a real inventory system.",
-        "For the price use realistic list prices if publicly available or a reasonable guess. ",
-        "Use a reasonable guess for the cost. ",
-        "Structure your answer as a JSON list without any markdown with each JSON object formatted in the following way: ",
+    @StructuredPrompt("""
+    Generate a list of exactly {{count}} unique synthetic product records as they might appear in an inventory management system as a JSON array.
+    Select a product that would be found in the {{department}} department of a typical store.
+    Return ONLY the JSON array, no other text.
 
-        "{",
-        "department: (text) The product department",
-        "manufacturer: (text) The name of the company that makes the product",
-        "category: (text) The product category",
-        "subcategory: (text) The product subcategory",
-        "sku: (text) The product SKU",
-        "name: (text) THe product model or name",
-        "seasonal: (boolean) [true or false] If the product is a seasonal item",
-        "price: (float) The product price to the consumer",
-        "cost: (float) The cost to produce or manufacture the product",
-        "}"
-    })
-    static class CreateProductPrompt {
-      private int count;
+    Each item must be an object:
+    {
+      department: (text) The product department,
+      manufacturer: (text) The name of the company that makes the product,
+      category: (text) The product category,
+      subcategory: (text) The product subcategory,
+      sku: (text) The product SKU,
+      name: (text) THe product model or name,
+      seasonal: (boolean) [true or false] If the product is a seasonal item,
+      price: (float) The product price to the consumer,
+    }
+    """)
+    public record CreateProductPrompt(int count, String department) {}
+
+    public interface ProductService {
+      String generateProducts(CreateProductPrompt prompt);
     }
 
-    interface Assistant {
-      String chat(String message);
-    }
-
-    public static List<JsonNode> run(int iterations, int count) {
-      ChatMemory chatMemory = MessageWindowChatMemory.withMaxMessages(10);
+    public static List<JsonNode> run(int iterations, int count, String department) {
+      LOGGER.debug("Generating {} iterations {} count for department {}", iterations, count, department);
       List<JsonNode> productList = new ArrayList<>();
       int total = count * iterations;
 
-      CreateProductPrompt productPrompt = new CreateProductPrompt();
-      productPrompt.count = count;
-      Prompt prompt = StructuredPromptProcessor.toPrompt(productPrompt);
-
-      Assistant assistant = AiServices.builder(Assistant.class)
+      ProductService service = AiServices.builder(ProductService.class)
           .chatModel(model)
-          .chatMemory(chatMemory)
           .build();
 
       ProgressOutput progress = new ProgressOutput(total);
       progress.init();
       while (productList.size() < total) {
         try {
-          String answer = assistant.chat(prompt.toUserMessage().toString());
-          List<JsonNode> batch = mapper.readValue(answer, typeFactory.constructCollectionType(List.class, JsonNode.class));
+          LOGGER.debug("Sending product prompt to LLM");
+          String answer = service.generateProducts(new CreateProductPrompt(count, department));
+          if (answer == null) {
+            progress.incrementErrorCount();
+            LOGGER.debug("LLM returned null, retrying");
+            continue;
+          }
+          List<JsonNode> batch = JsonUtils.parseJsonArray(answer);
           progress.writeLine(batch.size());
           productList.addAll(batch);
-        } catch (Exception e) {
+        } catch (TimeoutException t) {
           progress.incrementErrorCount();
-          LOGGER.debug(e.getMessage(), e);
+          LOGGER.debug("Timeout in getting LLM response, retrying");
+        } catch (JsonProcessingException e) {
+          progress.incrementErrorCount();
+          LOGGER.debug("Failed to parse LLM response, retrying");
+        } catch (Exception e) {
+          progress.newLine();
+          LOGGER.error(e.getMessage(), e);
+          return productList;
         }
       }
+
       progress.newLine();
       return new ArrayList<>(productList.subList(0, total));
     }

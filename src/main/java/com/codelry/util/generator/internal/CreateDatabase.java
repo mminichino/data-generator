@@ -1,24 +1,30 @@
 package com.codelry.util.generator.internal;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.ConsoleAppender;
+import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.cli.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.text.WordUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class CreateDatabase {
-  private static final Logger LOGGER = LogManager.getLogger(CreateDatabase.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CreateDatabase.class);
+  private static final Random rand = new Random();
   private static final String url = "jdbc:sqlite:src/main/resources/data/source.db";
   private static final String NAMES_TABLE = "CREATE TABLE IF NOT EXISTS names " +
                                             "(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -46,30 +52,45 @@ public class CreateDatabase {
                                             "(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                                             "state TEXT, " +
                                             "weight REAL)";
+  private static final String PRODUCTS_TABLE = "CREATE TABLE IF NOT EXISTS products " +
+                                               "(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                               "department TEXT," +
+                                               "manufacturer TEXT," +
+                                               "category TEXT," +
+                                               "subcategory TEXT," +
+                                               "sku TEXT," +
+                                               "name TEXT," +
+                                               "seasonal INTEGER," +
+                                               "price REAL, " +
+                                               "cost REAL)";
 
   public CreateDatabase() {}
 
   public static void main(String[] args) {
     Options options = new Options();
     CommandLine cmd = null;
+    configureLogging();
 
     Option nameOpt = new Option("n", "names", false, "Names");
     Option addressOpt = new Option("a", "address", false, "Addresses");
     Option phoneOpt = new Option("p", "phone", true, "Phones");
     Option zipOpt = new Option("z", "zip", true, "Zip Codes");
     Option stateOpt = new Option("s", "state", true, "State Data");
+    Option productOpt = new Option("P", "products", false, "Products");
 
     nameOpt.setRequired(false);
     addressOpt.setRequired(false);
     phoneOpt.setRequired(false);
     zipOpt.setRequired(false);
     stateOpt.setRequired(false);
+    productOpt.setRequired(false);
 
     options.addOption(nameOpt);
     options.addOption(addressOpt);
     options.addOption(phoneOpt);
     options.addOption(zipOpt);
     options.addOption(stateOpt);
+    options.addOption(productOpt);
 
     CommandLineParser parser = new DefaultParser();
     HelpFormatter formatter = new HelpFormatter();
@@ -90,6 +111,7 @@ public class CreateDatabase {
       stmt.execute(AREA_CODE_TABLE);
       stmt.execute(ZIP_CODE_TABLE);
       stmt.execute(STATE_TABLE);
+      stmt.execute(PRODUCTS_TABLE);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -104,7 +126,31 @@ public class CreateDatabase {
       populateZipTable(cmd.getOptionValue("zip"));
     } else if (cmd.hasOption("state")) {
       populateStateTable(cmd.getOptionValue("state"));
+    } else if (cmd.hasOption("products")) {
+      populateProductsTable(1);
     }
+  }
+
+  private static void configureLogging() {
+    LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+    context.reset();
+
+    PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+    encoder.setContext(context);
+    encoder.setPattern("[%-5level] - %msg%n");
+    encoder.start();
+
+    ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
+    appender.setContext(context);
+    appender.setEncoder(encoder);
+    appender.start();
+
+    ch.qos.logback.classic.Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
+    rootLogger.setLevel(Level.ERROR);
+    rootLogger.addAppender(appender);
+
+    ch.qos.logback.classic.Logger appLogger = context.getLogger(CreateDatabase.class.getName());
+    appLogger.setLevel(Level.INFO);
   }
 
   public static void populateNamesTable(int records) {
@@ -220,6 +266,70 @@ public class CreateDatabase {
       }
     } catch (IOException | SQLException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  public static float randomPercentage(int minValue, int maxValue) {
+    int randomPercentage = rand.nextInt(maxValue - minValue + 1) + minValue;
+    return randomPercentage / 100.0f;
+  }
+
+  public static Map<String, Integer> deptMap() {
+    return Map.ofEntries(
+        Map.entry("Apparel", 200),
+        Map.entry("Electronics", 100),
+        Map.entry("Home Furnishings", 100),
+        Map.entry("Food and Beverage", 300),
+        Map.entry("Health and Beauty", 100),
+        Map.entry("Sports and Outdoors", 100),
+        Map.entry("Toys and Games", 50),
+        Map.entry("Media and Entertainment", 50),
+        Map.entry("Automotive", 100),
+        Map.entry("Baby and Kids", 100),
+        Map.entry("Pet Supplies", 100),
+        Map.entry("Office Supplies", 100),
+        Map.entry("Garden and Outdoor", 100),
+        Map.entry("Hardware and Tools", 100)
+    );
+  }
+
+  public static void populateProductsTable(int scale) {
+    int batch = 50;
+    Map<String, Integer> departments = deptMap();
+
+    GenerateIdentityData gen = new GenerateIdentityData();
+
+    for (Map.Entry<String, Integer> entry : departments.entrySet()) {
+      String department = entry.getKey();
+      int base = entry.getValue();
+      int count = base * scale;
+      int iterations = count / batch;
+      LOGGER.info("Generating random product data for department: {}", department);
+      List<JsonNode> productList = gen.generateProducts(iterations, batch, department);
+
+      LOGGER.info("Inserting {} data into the database", department);
+      try (Connection conn = DriverManager.getConnection(url)) {
+        for (JsonNode product : productList) {
+          String sql = "INSERT INTO products(department,manufacturer,category,subcategory,sku,name,seasonal,price,cost) VALUES(?,?,?,?,?,?,?,?,?)";
+          PreparedStatement stmt = conn.prepareStatement(sql);
+          stmt.setString(1, department);
+          stmt.setString(2, product.get("manufacturer").asText());
+          stmt.setString(3, product.get("category").asText());
+          stmt.setString(4, product.get("subcategory").asText());
+          stmt.setString(5, product.get("sku").asText());
+          stmt.setString(6, product.get("name").asText());
+          stmt.setInt(7, product.get("seasonal").asBoolean() ? 1 : 0);
+          stmt.setDouble(8, product.get("price").asDouble());
+          float pct = randomPercentage(60, 80);
+          double cost = product.get("price").asDouble() * pct;
+          BigDecimal bdValue = new BigDecimal(cost);
+          BigDecimal bdCost = bdValue.setScale(2, RoundingMode.HALF_UP);
+          stmt.setDouble(9, bdCost.doubleValue());
+          stmt.executeUpdate();
+        }
+      } catch (SQLException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 }

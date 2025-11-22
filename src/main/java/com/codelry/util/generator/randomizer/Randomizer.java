@@ -31,6 +31,11 @@ public class Randomizer {
     return roundDouble(randomValue, places);
   }
 
+  public float randomPercentage(int minValue, int maxValue) {
+    int randomPercentage = rand.nextInt(maxValue - minValue + 1) + minValue;
+    return randomPercentage / 100.0f;
+  }
+
   public String randomListElement(List<String> values) {
     return values.get(randomNumber(0, values.size() - 1));
   }

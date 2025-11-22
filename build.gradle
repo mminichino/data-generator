@@ -5,6 +5,8 @@ plugins {
     id 'com.github.node-gradle.node' version '7.1.0'
 }
 
+import org.gradle.api.tasks.options.Option
+
 group = 'com.codelry.util'
 version = '0.1.0'
 
@@ -46,6 +48,9 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    testLogging {
+        showStandardStreams = true
+    }
 }
 
 tasks.test {
@@ -86,4 +91,43 @@ tasks.register('pmList', NpxTask) {
     dependsOn npmInstall
     command = 'pm2'
     args = ['list']
+}
+
+abstract class CreateDatabaseTask extends JavaExec {
+    @Option(option = 'names', description = 'Generate Names')
+    void setNames(boolean names) {
+        if (names) args '--names'
+    }
+
+    @Option(option = 'address', description = 'Generate Addresses')
+    void setAddress(boolean address) {
+        if (address) args '--address'
+    }
+
+    @Option(option = 'phone', description = 'Phones CSV file path')
+    void setPhone(String phone) {
+        args '--phone', phone
+    }
+
+    @Option(option = 'zip', description = 'Zip Codes CSV file path')
+    void setZip(String zip) {
+        args '--zip', zip
+    }
+
+    @Option(option = 'state', description = 'State Data CSV file path')
+    void setState(String state) {
+        args '--state', state
+    }
+
+    @Option(option = 'products', description = 'Generate Products')
+    void setProducts(boolean products) {
+        if (products) args '--products'
+    }
+}
+
+tasks.register('createDatabase', CreateDatabaseTask) {
+    group = 'application'
+    description = 'Runs the database generation utility'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.codelry.util.generator.internal.CreateDatabase'
 }
