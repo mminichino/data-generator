@@ -1,5 +1,6 @@
 package com.codelry.util.generator.generator;
 
+import com.codelry.util.generator.dto.Table;
 import com.codelry.util.generator.randomizer.Randomizer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -36,139 +37,37 @@ public class Generator {
   private String id;
   private JsonNode document;
   private final long index;
-  private final String idTemplate;
-  private final JsonNode docTemplate;
+  private final Table table;
   private String idField = "id";
 
-  public Generator(long number, String id, JsonNode doc) {
-    index = number;
-    idTemplate = id;
-    docTemplate = doc;
+  public Generator(long index, Table table) {
+    this.index = index;
+    this.table = table;
+    this.table.setIndex(index);
   }
 
   public Record generate() {
     indexValue = index;
-//    document = preProcess(docTemplate);
-//    document = arrayProcess(document);
-    document = processMain(docTemplate);
-    id = processId(idTemplate);
+    document = processMain();
+    id = processId();
     return new Record(getId(), getDocument());
   }
 
-  public JsonNode preProcess(JsonNode json) {
-    Context context = new Context();
-    JinjavaConfig config = JinjavaConfig
-        .newBuilder()
-        .withFeatureConfig(
-            FeatureConfig.newBuilder().add(ECHO_UNDEFINED, FeatureStrategies.ACTIVE).build()
-        )
-        .build();
-    Jinjava jinjava = new Jinjava(config);
-    try {
-      String template = mapper.writeValueAsString(json);
-      jinjava.getGlobalContext().registerFunction(
-          new ELFunctionDefinition(
-              "",
-              "repeat",
-              this.getClass().getDeclaredMethod("arrayGen", int.class)
-          )
-      );
-      interpreter = new JinjavaInterpreter(jinjava, context, config);
-      return mapper.readTree(interpreter.render(template));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public JsonNode arrayProcess(JsonNode json) {
-    ObjectNode result = mapper.createObjectNode();
-    Iterator<Map.Entry<String, JsonNode>> fields = json.fields();
-    while (fields.hasNext()) {
-      Map.Entry<String, JsonNode> field = fields.next();
-      result.set(field.getKey(), walkJson(field.getValue()));
-    }
-    return result;
-  }
-
-  public JsonNode processMain(JsonNode json) {
+  public JsonNode processMain() {
     try {
       ObjectMapper mapper = new ObjectMapper();
       SimpleModule module = new SimpleModule();
-      module.addSerializer(JsonNode.class, new GeneratorSerializer());
+      module.addSerializer(Table.class, new GeneratorSerializer());
       mapper.registerModule(module);
-      String template = mapper.writeValueAsString(json);
+      String template = mapper.writeValueAsString(table);
       return mapper.readTree(template);
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public String processId(String template) {
-    Context context = new Context();
-    JinjavaConfig config = JinjavaConfig.newBuilder().build();
-    Jinjava jinjava = new Jinjava(config);
-    context.put("INDEX", indexValue);
-    jinjava.getGlobalContext().registerFilter(new PadFilter());
-    jinjava.getGlobalContext().registerFilter(new DocumentFilter(document));
-    try {
-      jinjava.getGlobalContext().registerFunction(
-          new ELFunctionDefinition(
-              "",
-              "random_uuid",
-              this.getClass().getDeclaredMethod("randomUuid")
-          )
-      );
-      return jinjava.render(template, context);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public JsonNode walkJson(JsonNode node) {
-    if (node.isObject()) {
-      return walkJson(node);
-    } else if (node.isArray()) {
-      if (node.get(0).asText().startsWith("####repeat:")) {
-        String[] tag = node.get(0).asText().split(":");
-        if (tag.length != 2) {
-          throw new RuntimeException("Invalid repeat tag: " + node.get(0).asText());
-        }
-        int count = Integer.parseInt(tag[1]);
-        JsonNode template = node.get(1).deepCopy();
-        ArrayNode array = mapper.createArrayNode();
-        for (int i = 1; i <= count; i++) {
-          array.add(processMain(template));
-        }
-        return array;
-      } else {
-        return node;
-      }
-    } else {
-      return node;
-    }
-  }
-
-  public Set<String> extractBindings(String template) {
-    Set<String> bindings = new HashSet<>();
-    try {
-      Jinjava jinjava = new Jinjava();
-      JinjavaInterpreter interpreter = jinjava.newInterpreter();
-      Node rootNode = interpreter.parse(template);
-      traverseNodes(rootNode, bindings);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-    return bindings;
-  }
-
-  private void traverseNodes(Node node, Set<String> bindings) {
-    if (node instanceof ExpressionNode) {
-      ExpressionToken token = (ExpressionToken) node.getMaster();
-      bindings.add(token.getExpr());
-    }
-    for (Node child : node.getChildren()) {
-      traverseNodes(child, bindings);
-    }
+  public String processId() {
+    return "id_" + indexValue + "_" + table.getName();
   }
 
   public static String randomUuid() {

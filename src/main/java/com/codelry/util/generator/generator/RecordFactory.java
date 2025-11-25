@@ -1,5 +1,6 @@
 package com.codelry.util.generator.generator;
 
+import com.codelry.util.generator.dto.Table;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,16 +17,14 @@ public class RecordFactory {
   private final List<Future<Record>> loadTasks = new ArrayList<>();
   private ExecutorService loadExecutor;
   private static final AtomicLong counter = new AtomicLong(1);
-  private final String idTemplate;
-  private final JsonNode template;
+  private final Table table;
   private int batchSize = 32;
   private Thread runThread;
 
-  public RecordFactory(String id, JsonNode doc) {
-    loadExecutor = Executors.newFixedThreadPool(64);
-    recordQueue = new LinkedBlockingQueue<>(32);
-    idTemplate = id;
-    template = doc;
+  public RecordFactory(Table table) {
+    this.loadExecutor = Executors.newFixedThreadPool(64);
+    this.recordQueue = new LinkedBlockingQueue<>(32);
+    this.table = table;
   }
 
   public void setThreads(int threads) {
@@ -62,7 +61,7 @@ public class RecordFactory {
   public void start() {
     runThread = new Thread(() -> {
       while (!Thread.currentThread().isInterrupted()) {
-        Generator generator = new Generator(counter.get(), idTemplate, template);
+        Generator generator = new Generator(counter.get(), table);
         loadTaskAdd(generator::generate);
         if (counter.getAndIncrement() % batchSize == 0) {
           loadTaskGet();

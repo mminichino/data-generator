@@ -14,8 +14,10 @@ public class DatabaseManager {
   private static DatabaseManager instance;
   public static long nameCount;
   public static long addressCount;
+  public static long productCount;
   public static List<NameRecord> nameList = new ArrayList<>();
   public static List<AddressRecord> addressList = new ArrayList<>();
+  public static List<ProductRecord> productList = new ArrayList<>();
   public static Map<String, List<String>> areaCodeList = new HashMap<>();
   public static Map<String, List<StateRecord>> stateList = new HashMap<>();
   public static LinkedHashMap<String, Double> stateMap = new LinkedHashMap<>();
@@ -38,11 +40,13 @@ public class DatabaseManager {
       Connection conn = DriverManager.getConnection("jdbc:sqlite:" + Objects.requireNonNull(sourceDb).getPath(), properties);
       buildNameList(conn);
       buildAddressList(conn);
+      buildProductList(conn);
       buildAreaCodeList(conn);
       buildStateList(conn);
       buildStateMap(conn);
       nameCount = getNameCount();
       addressCount = getAddressCount();
+      productCount = getProductCount();
       conn.close();
       LOGGER.debug("Database initialized");
     } catch (SQLException e) {
@@ -56,6 +60,10 @@ public class DatabaseManager {
 
   public long getAddressCount() {
     return addressList.size();
+  }
+
+  public long getProductCount() {
+    return productList.size();
   }
 
   public void buildNameList(Connection conn) {
@@ -87,6 +95,29 @@ public class DatabaseManager {
             rs.getString("city"),
             rs.getString("state"),
             rs.getString("zip")
+        ));
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void buildProductList(Connection conn) {
+    String sql = "SELECT department, manufacturer, category, subcategory, sku, name, seasonal, price, cost FROM products";
+    try {
+      Statement stmt = conn.createStatement();
+      ResultSet rs = stmt.executeQuery(sql);
+      while (rs.next()) {
+        productList.add(new ProductRecord(
+            rs.getString("department"),
+            rs.getString("manufacturer"),
+            rs.getString("category"),
+            rs.getString("subcategory"),
+            rs.getString("sku"),
+            rs.getString("name"),
+            rs.getBoolean("seasonal"),
+            rs.getFloat("price"),
+            rs.getFloat("cost")
         ));
       }
     } catch (SQLException e) {
@@ -187,6 +218,10 @@ public class DatabaseManager {
 
   public AddressRecord getAddressById(int id) {
     return addressList.get(id - 1);
+  }
+
+  public ProductRecord getProductById(int id) {
+    return productList.get(id - 1);
   }
 
   public String getStreetNameById(int id) {

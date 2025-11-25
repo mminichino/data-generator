@@ -4,15 +4,27 @@ import com.codelry.util.generator.db.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
-import java.util.Random;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Randomizer {
   private final Random rand = new Random();
   private static DatabaseManager databaseManager;
+  private static final String[] lorem = {
+      "lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing",
+      "elit", "sed", "do", "eiusmod", "tempor", "incididunt", "ut", "labore",
+      "et", "dolore", "magna", "aliqua"
+  };
+  private static final String[] terminator = {".", "?", "!"};
+  private static final String[] punctuation = {";", ":", ","};
 
   public Randomizer() {
     databaseManager = DatabaseManager.getInstance();
+  }
+
+  public String randomUuid() {
+    return UUID.randomUUID().toString();
   }
 
   public int randomNumber(int minValue, int maxValue) {
@@ -26,6 +38,20 @@ public class Randomizer {
     return bd.doubleValue();
   }
 
+  public double randomNumber(int digits, boolean isDecimal) {
+    int min = (int) Math.pow(10, digits - 1);
+    int max = (int) Math.pow(10, digits) - 1;
+    int places = isDecimal ? digits : 0;
+    return randomDouble(min, max, places);
+  }
+
+  public double randomDollarAmount(int digits) {
+    int min = (int) Math.pow(10, digits - 1);
+    int max = (int) Math.pow(10, digits) - 1;
+    int places = 2;
+    return randomDouble(min, max, places);
+  }
+
   public double randomDouble(double minValue, double maxValue, int places) {
     double randomValue = minValue + (maxValue - minValue) * rand.nextDouble();
     return roundDouble(randomValue, places);
@@ -34,6 +60,32 @@ public class Randomizer {
   public float randomPercentage(int minValue, int maxValue) {
     int randomPercentage = rand.nextInt(maxValue - minValue + 1) + minValue;
     return randomPercentage / 100.0f;
+  }
+
+  public Date randomDate(int offset) {
+    Random rand = new Random();
+    Date date = new Date();
+    int seconds = rand.nextInt((15552000 - 86400) + 1) + 86400;
+    int absOffset = Math.abs(offset);
+    int delta = rand.nextInt((absOffset - 1) + 1) + 1;
+    int years = offset > 0 ? delta : -delta;
+    Calendar c = Calendar.getInstance();
+    c.setTime(date);
+    c.add(Calendar.YEAR, years);
+    c.add(Calendar.SECOND, seconds);
+    return c.getTime();
+  }
+
+  public String randomDateString(String format, int offset) {
+    Date time = randomDate(offset);
+    SimpleDateFormat timeFormat = new SimpleDateFormat(format);
+    return timeFormat.format(time);
+  }
+
+  public String timestamp() {
+    Date date = new Date();
+    SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    return timeFormat.format(date);
   }
 
   public String randomListElement(List<String> values) {
@@ -94,6 +146,11 @@ public class Randomizer {
         stateRecord.state,
         stateRecord.zip
     );
+  }
+
+  public ProductRecord randomProductRecord() {
+    int productIndex = randomNumber(1, (int) DatabaseManager.productCount);
+    return databaseManager.getProductById(productIndex);
   }
 
   public String randomPhoneNumber(String state) {
@@ -185,5 +242,62 @@ public class Randomizer {
       alternate = !alternate;
     }
     return (sum % 10 == 0);
+  }
+
+  public int randomArrayIndex(int length) {
+    int minValue = 0;
+    int maxValue = length - 1;
+    return randomNumber(minValue, maxValue);
+  }
+
+  public String loremWord() {
+    return lorem[randomArrayIndex(lorem.length)];
+  }
+
+  public String punctuation() {
+    return punctuation[randomArrayIndex(punctuation.length)];
+  }
+
+  public String terminator() {
+    return terminator[randomArrayIndex(terminator.length)];
+  }
+
+  public String capitalizeFirst(String text) {
+    return text.substring(0, 1).toUpperCase() + text.substring(1);
+  }
+
+  public String loremStart() {
+    int minValue = 4;
+    int maxValue = lorem.length;
+    int limit = randomNumber(minValue, maxValue);
+    String sentence = Arrays.stream(lorem)
+        .limit(limit)
+        .collect(Collectors.joining(" "));
+    return capitalizeFirst(sentence) + terminator();
+  }
+
+  public String loremSegment() {
+    List<String> list = Arrays.asList(lorem);
+    Collections.shuffle(list);
+    int minValue = 4;
+    int maxValue = list.size();
+    int limit = randomNumber(minValue, maxValue);
+    return list.stream().limit(limit).collect(Collectors.joining(" "));
+  }
+
+  public String loremSentence() {
+    if (randomNumber(0, 1) == 0) {
+      return capitalizeFirst(loremSegment()) + terminator();
+    }
+    return capitalizeFirst(loremSegment()) + punctuation() + " " + loremSegment() + terminator();
+  }
+
+  public String loremText(int length) {
+    StringBuilder s = new StringBuilder();
+    s.append(loremStart());
+    while (s.length() < length) {
+      s.append(" ").append(loremSentence());
+    }
+    return s.toString();
   }
 }

@@ -20,6 +20,8 @@ public class Table {
     @JsonProperty("columns")
     public List<Column> columns;
 
+    public long index;
+
     public Table() {
     }
 
@@ -37,4 +39,7 @@ public class Table {
 
     public List<Column> getColumns() { return columns; }
     public void setColumns(List<Column> columns) { this.columns = columns; }
+
+    public long getIndex() { return index; }
+    public void setIndex(long index) { this.index = index; }
 }
