@@ -1,7 +1,6 @@
 package com.codelry.util.generator.generator;
 
 import com.codelry.util.generator.dto.Table;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -16,15 +15,19 @@ public class RecordFactory {
   public BlockingQueue<Throwable> errorQueue = new LinkedBlockingQueue<>();
   private final List<Future<Record>> loadTasks = new ArrayList<>();
   private ExecutorService loadExecutor;
-  private static final AtomicLong counter = new AtomicLong(1);
+  private static final AtomicLong counter = new AtomicLong(0);
   private final Table table;
   private int batchSize = 32;
+  private final long count;
   private Thread runThread;
 
-  public RecordFactory(Table table) {
+  public RecordFactory(Table table, long start, long count) {
     this.loadExecutor = Executors.newFixedThreadPool(64);
     this.recordQueue = new LinkedBlockingQueue<>(32);
     this.table = table;
+    this.table.getIndex().set(start);
+    this.count = count;
+    this.batchSize = (this.batchSize > count) ? (int) count : this.batchSize;
   }
 
   public void setThreads(int threads) {
@@ -48,6 +51,7 @@ public class RecordFactory {
     for (Future<Record> future : loadTasks) {
       try {
         Record record = future.get();
+        LOGGER.debug("Record added to queue {}", record.getId());
         recordQueue.put(record);
       } catch (ExecutionException e) {
         errorQueue.add(e);
@@ -60,10 +64,13 @@ public class RecordFactory {
 
   public void start() {
     runThread = new Thread(() -> {
-      while (!Thread.currentThread().isInterrupted()) {
-        Generator generator = new Generator(counter.get(), table);
+      while (!Thread.currentThread().isInterrupted() && counter.get() < count) {
+        counter.getAndIncrement();
+        Generator generator = new Generator(table);
+        LOGGER.debug("Generating record {}", counter.get());
         loadTaskAdd(generator::generate);
-        if (counter.getAndIncrement() % batchSize == 0) {
+        if (counter.get() % batchSize == 0 || counter.get() == count) {
+          LOGGER.debug("Load batch from queue");
           loadTaskGet();
         }
       }

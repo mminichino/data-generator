@@ -2,6 +2,7 @@ package com.codelry.util.generator.generator;
 
 import com.codelry.util.generator.db.AddressRecord;
 import com.codelry.util.generator.db.NameRecord;
+import com.codelry.util.generator.db.ProductRecord;
 import com.codelry.util.generator.dto.Column;
 import com.codelry.util.generator.dto.Table;
 import com.codelry.util.generator.randomizer.Randomizer;
@@ -19,23 +20,26 @@ public class GeneratorSerializer extends JsonSerializer<Table> {
 
   @Override
   public void serialize(Table value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-    generateJson(value, gen, 0);
+    generateJson(value, gen);
   }
 
-  public static void generateJson(Table table, JsonGenerator gen, int index) throws IOException {
+  public static void generateJson(Table table, JsonGenerator gen) throws IOException {
     NameRecord name = null;
     AddressRecord address = null;
-    int digits = 5;
-    boolean isDecimal = false;
-    double value = 0;
-    int number = 0;
+    ProductRecord product = null;
+    int digits;
+    boolean isDecimal;
+    double value;
+    int number;
+    byte[] bytes;
+    String[] list;
 
     gen.writeStartObject();
     for (Column column : table.getColumns()) {
       gen.writeFieldName(column.name);
       switch (column.type) {
         case SEQUENTIAL_NUMBER:
-          gen.writeNumber(table.getIndex());
+          gen.writeNumber(table.getIndex().getAndIncrement());
           break;
         case FIRST_NAME:
           name = (name == null) ? randomizer.randomNameRecord() : name;
@@ -106,7 +110,40 @@ public class GeneratorSerializer extends JsonSerializer<Table> {
         case TEXT:
           gen.writeString(randomizer.loremText(25));
           break;
+        case MAC_ADDRESS:
+          bytes = new byte[6];
+          randomizer.randomBytes(bytes);
+          gen.writeString(String.format("%02X:%02X:%02X:%02X:%02X:%02X", bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]));
+          break;
+        case IP_ADDRESS:
+          gen.writeString(randomizer.randomIpAddress());
+          break;
+        case SET:
+          list = column.options.containsKey("members") ? (String[]) column.options.get("members") : new String[]{"one", "two", "three"};
+          gen.writeStartArray();
+          for (String member : list) {
+            gen.writeString(member);
+          }
+          gen.writeEndArray();
+          break;
+        case PRODUCT_NAME:
+          product = (product == null) ? randomizer.randomProductRecord() : product;
+          gen.writeString(product.name);
+          break;
+        case MANUFACTURER:
+          product = (product == null) ? randomizer.randomProductRecord() : product;
+          gen.writeString(product.manufacturer);
+          break;
+        case PRODUCT_TYPE:
+          product = (product == null) ? randomizer.randomProductRecord() : product;
+          gen.writeString(product.category);
+          break;
+        default:
+          LOGGER.warn("Unknown column type: {}", column.type);
+          gen.writeString("unknown");
+          break;
       }
     }
+    gen.writeEndObject();
   }
 }

@@ -23,6 +23,10 @@ public class Randomizer {
     databaseManager = DatabaseManager.getInstance();
   }
 
+  public void randomBytes(byte[] bytes) {
+    rand.nextBytes(bytes);
+  }
+
   public String randomUuid() {
     return UUID.randomUUID().toString();
   }
@@ -242,6 +246,28 @@ public class Randomizer {
       alternate = !alternate;
     }
     return (sum % 10 == 0);
+  }
+
+  public String randomIpAddress() {
+    Random random = new Random();
+    int range = random.nextInt(3);
+
+    return switch (range) {
+      case 0 ->
+          String.format("10.%d.%d.%d",
+              random.nextInt(256),
+              random.nextInt(256),
+              random.nextInt(256));
+      case 1 ->
+          String.format("172.%d.%d.%d",
+              16 + random.nextInt(16),
+              random.nextInt(256),
+              random.nextInt(256));
+      default ->
+          String.format("192.168.%d.%d",
+              random.nextInt(256),
+              random.nextInt(256));
+    };
   }
 
   public int randomArrayIndex(int length) {

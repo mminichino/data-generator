@@ -2,6 +2,7 @@ package com.codelry.util.generator.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Table {
 
@@ -20,7 +21,7 @@ public class Table {
     @JsonProperty("columns")
     public List<Column> columns;
 
-    public long index;
+    public AtomicLong index = new AtomicLong(1);
 
     public Table() {
     }
@@ -40,6 +41,6 @@ public class Table {
     public List<Column> getColumns() { return columns; }
     public void setColumns(List<Column> columns) { this.columns = columns; }
 
-    public long getIndex() { return index; }
-    public void setIndex(long index) { this.index = index; }
+    public AtomicLong getIndex() { return index; }
+    public void setIndex(AtomicLong index) { this.index = index; }
 }
