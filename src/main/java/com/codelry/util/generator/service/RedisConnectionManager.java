@@ -14,6 +14,7 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -34,6 +35,7 @@ public class RedisConnectionManager {
   private static final Logger logger = LoggerFactory.getLogger(RedisConnectionManager.class);
 
   private final AtomicReference<LettuceConnectionFactory> connectionFactory = new AtomicReference<>();
+  private final AtomicReference<ReactiveRedisConnectionFactory> reactiveFactory = new AtomicReference<>();
   private final AtomicReference<RedisModulesClient> modulesClient = new AtomicReference<>();
   private final AtomicReference<GenericObjectPool<StatefulRedisModulesConnection<String, String>>> connectionPool = new AtomicReference<>();
   private final ClientResources clientResources;

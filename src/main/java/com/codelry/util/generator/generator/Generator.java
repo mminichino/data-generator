@@ -5,6 +5,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+
+import com.hubspot.jinjava.Jinjava;
+import com.hubspot.jinjava.JinjavaConfig;
+import com.hubspot.jinjava.interpret.Context;
+import com.hubspot.jinjava.interpret.JinjavaInterpreter;
+import com.hubspot.jinjava.interpret.RenderResult;
+import com.hubspot.jinjava.lib.filter.Filter;
+
 import java.util.*;
 
 import org.slf4j.Logger;
@@ -23,6 +31,7 @@ public class Generator {
   public Record generate() {
     document = processMain();
     id = processId();
+    logger.info("Generated record: {}", id);
     return new Record(getId(), getDocument());
   }
 
@@ -41,7 +50,7 @@ public class Generator {
   }
 
   public String processId() {
-    return UUID.randomUUID().toString();
+    return keyTemplate(table.keyFormat);
   }
 
   public JsonNode getDocument() {
@@ -50,5 +59,61 @@ public class Generator {
 
   public String getId() {
     return id;
+  }
+
+  public String keyTemplate(String template) {
+    Context context = new Context();
+    JinjavaConfig config = JinjavaConfig.newBuilder().build();
+    Jinjava jinjava = new Jinjava(config);
+    try {
+      jinjava.getGlobalContext().registerFilter(new Generator.ZeroPadFilter());
+
+      context.put("__uuid__", UUID.randomUUID().toString());
+      context.put("__table__", table.name);
+
+      document.properties().forEach(entry ->
+          context.put(entry.getKey(), entry.getValue().asText()));
+
+      RenderResult result = jinjava.renderForResult(template, context);
+      if (!result.getErrors().isEmpty()) {
+        result.getErrors().forEach(error ->
+            logger.error("Error rendering key template: [{}] {}", error.getSeverity(), error.getReason()));
+      }
+      return result.getOutput();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static class ZeroPadFilter implements Filter {
+
+    @Override
+    public String getName() {
+      return "zero_pad";
+    }
+
+    @Override
+    public Object filter(Object var, JinjavaInterpreter interpreter, String... args) {
+      if (var == null) {
+        return "";
+      }
+
+      int targetLength = 10;
+      if (args.length > 0) {
+        try {
+          targetLength = Integer.parseInt(args[0]);
+        } catch (NumberFormatException e) {
+          return var;
+        }
+      }
+
+      String value = var.toString();
+
+      if (value.length() >= targetLength) {
+        return value;
+      }
+
+      return String.format("%0" + targetLength + "d", Integer.parseInt(value));
+    }
   }
 }

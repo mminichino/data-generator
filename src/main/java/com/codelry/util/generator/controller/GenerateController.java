@@ -1,9 +1,14 @@
 package com.codelry.util.generator.controller;
 
 import com.codelry.util.generator.driver.JsonData;
+import com.codelry.util.generator.driver.Redis;
 import com.codelry.util.generator.dto.*;
+import com.codelry.util.generator.service.RedisConnectionManager;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.redis.lettucemod.api.StatefulRedisModulesConnection;
+import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +23,11 @@ import java.util.*;
 public class GenerateController {
 
   private static final Logger logger = LoggerFactory.getLogger(GenerateController.class);
+  private final RedisConnectionManager redisConnectionManager;
+
+  public GenerateController(RedisConnectionManager redisConnectionManager) {
+    this.redisConnectionManager = redisConnectionManager;
+  }
 
   @PostMapping("/generate")
   public ResponseEntity<GenerateResponse> generate(
@@ -34,6 +44,13 @@ public class GenerateController {
         driver.generate();
         samples = driver.getRecords();
         logger.info("Samples generated successfully: {} records", samples.size());
+      } else {
+        LettuceConnectionFactory factory;
+        factory = redisConnectionManager.getConnectionFactory();
+        Redis driver = new Redis();
+        driver.init(schema, 1, 10);
+        driver.connect(factory);
+        driver.generate();
       }
 
       String result = new ObjectMapper().writeValueAsString(schema);

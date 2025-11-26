@@ -20,21 +20,9 @@ export default function SchemaEditor({ schema, onSave, onCancel, nosql = false }
 
   useEffect(() => {
     if (nosql && !editedSchema.keyFormat) {
-      setEditedSchema((prev) => ({ ...prev, keyFormat: `'${prev.name}', $uuid` }));
+      setEditedSchema((prev) => ({ ...prev, keyFormat: `{{ table_name }}:{{ uuid }}` }));
     }
   }, [nosql]);
-
-  useEffect(() => {
-    const prevName = prevNameRef.current;
-    if (!nosql) return;
-    const currentKF = editedSchema.keyFormat || '';
-    const prevDefault = `'${prevName}', $uuid`;
-    const shouldUpdateKF = !currentKF || currentKF === prevDefault;
-    if (shouldUpdateKF) {
-      setEditedSchema((prev) => ({ ...prev, keyFormat: `'${prev.name}', $uuid` }));
-    }
-    prevNameRef.current = editedSchema.name;
-  }, [editedSchema.name, nosql]);
 
   const handleAddColumn = () => {
     const newColumn: ColumnDefinition = {
@@ -122,7 +110,7 @@ export default function SchemaEditor({ schema, onSave, onCancel, nosql = false }
               <input
                 type="text"
                 className="form-control"
-                placeholder="'table_name', $uuid"
+                placeholder="{{ table_name }}:{{ uuid }}"
                 value={editedSchema.keyFormat || ''}
                 onChange={(e) => setEditedSchema({ ...editedSchema, keyFormat: e.target.value })}
               />
@@ -204,7 +192,7 @@ export default function SchemaEditor({ schema, onSave, onCancel, nosql = false }
 
           <div className="mt-4">
             <button onClick={handleSave} className="btn btn-success me-2">
-              Save Schema
+              Save Table
             </button>
             <button onClick={onCancel} className="btn btn-secondary">
               Cancel

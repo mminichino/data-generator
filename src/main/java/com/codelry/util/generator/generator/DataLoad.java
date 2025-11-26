@@ -32,6 +32,7 @@ public abstract class DataLoad {
     for (Table table : schema.getTables()) {
       LOGGER.info("Generating data for schema {}", schema.getName());
       RecordFactory factory = new RecordFactory(table, recordStart, recordCount);
+      factory.setIndex(0);
       factory.start();
       for (int i = 0; i < recordCount; i += batchSize) {
         long end = Math.min(i + batchSize, recordCount);
