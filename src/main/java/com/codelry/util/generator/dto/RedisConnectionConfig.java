@@ -8,6 +8,7 @@ public class RedisConnectionConfig {
   private String password = "";
   private int database = 0;
   private boolean useSsl = false;
+  private boolean useJson = false;
   private String keystorePath = "";
   private String keystorePassword = "";
   private String keystoreType = "PKCS12";
@@ -35,6 +36,9 @@ public class RedisConnectionConfig {
 
   public boolean isUseSsl() { return useSsl; }
   public void setUseSsl(boolean useSsl) { this.useSsl = useSsl; }
+
+  public boolean isUseJson() { return useJson; }
+  public void setUseJson(boolean useJson) { this.useJson = useJson; }
 
   public String getKeystorePath() { return keystorePath; }
   public void setKeystorePath(String keystorePath) { this.keystorePath = keystorePath; }

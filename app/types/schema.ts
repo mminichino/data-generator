@@ -68,6 +68,8 @@ export interface DatabaseConnection {
     database: string;
     username: string;
     password: string;
+    ssl?: boolean;
+    json?: boolean;
 }
 
 export interface GenerateDataRequest {

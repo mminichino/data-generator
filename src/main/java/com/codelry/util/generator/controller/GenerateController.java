@@ -3,6 +3,7 @@ package com.codelry.util.generator.controller;
 import com.codelry.util.generator.driver.JsonData;
 import com.codelry.util.generator.driver.Redis;
 import com.codelry.util.generator.dto.*;
+import com.codelry.util.generator.service.ReactiveRedisJsonTemplate;
 import com.codelry.util.generator.service.RedisConnectionManager;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,9 +46,13 @@ public class GenerateController {
       } else {
         logger.info("Inserting generated data using Redis driver");
         ReactiveRedisTemplate<String, String> reactiveTemplate = redisConnectionManager.reactiveRedisTemplate();
+        ReactiveRedisJsonTemplate<String, String> reactiveJsonTemplate = redisConnectionManager.reactiveRedisJsonTemplate();
         Redis driver = new Redis();
         driver.init(schema, 1, 10);
-        driver.connect(reactiveTemplate);
+        driver.connect(reactiveTemplate, reactiveJsonTemplate);
+        if (redisConnectionManager.isUseJson()) {
+          driver.setUseJson(true);
+        }
         driver.generate();
       }
 

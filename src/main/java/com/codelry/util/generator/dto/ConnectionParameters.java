@@ -9,6 +9,7 @@ public class ConnectionParameters {
   private String database = "";
   private String schema = "";
   private boolean useSsl = false;
+  private boolean useJson = false;
 
   public String getType() {
     return type;
@@ -72,5 +73,13 @@ public class ConnectionParameters {
 
   public void setUseSsl(boolean useSsl) {
     this.useSsl = useSsl;
+  }
+
+  public boolean isUseJson() {
+    return useJson;
+  }
+
+  public void setUseJson(boolean useJson) {
+    this.useJson = useJson;
   }
 }

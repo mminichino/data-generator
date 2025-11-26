@@ -35,6 +35,7 @@ public class ConnectionController {
         config.setHost(parameters.getHost());
         config.setPort(parameters.getPort());
         config.setPassword(parameters.getPassword());
+        config.setUseJson(parameters.isUseJson());
         redisConnectionManager.connect(config);
         appConfig.setConnected(true);
         appConfig.setType("redis");

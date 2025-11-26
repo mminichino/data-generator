@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 type DbType = 'redis' | 'postgres';
 
 export default function ConnectionPage() {
-  // Form state
   const [type, setType] = useState<DbType>('redis');
   const [hostname, setHostname] = useState<string>('localhost');
   const [port, setPort] = useState<string>('6379');
@@ -14,16 +13,15 @@ export default function ConnectionPage() {
   const [database, setDatabase] = useState<string>('0');
   const [schema, setSchema] = useState<string>('');
   const [useSsl, setUseSsl] = useState<boolean>(false);
+  const [useJson, setUseJson] = useState<boolean>(false);
 
-  // Connection state
   const [connected, setConnected] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [disconnected, setDisconnected] = useState<boolean>(false);
   const [statusChecking, setStatusChecking] = useState<boolean>(false);
 
-  // Indicator color based on connection (use Bootstrap colors for visibility)
   const indicatorColor = useMemo(() => (connected ? 'bg-success' : 'bg-secondary'), [connected]);
 
-  // When type changes, pre-populate fields per requirements
   useEffect(() => {
     if (type === 'redis') {
       setPort('6379');
@@ -50,7 +48,6 @@ export default function ConnectionPage() {
           setConnected(Boolean(json?.connected));
         }
       } catch (e) {
-        // ignore, keep default disconnected
         console.error('Failed to fetch status', e);
       } finally {
         setStatusChecking(false);
@@ -71,6 +68,7 @@ export default function ConnectionPage() {
         database,
         schema,
         useSsl,
+        useJson,
       };
       const res = await fetch('/api/database/connect', {
         method: 'POST',
@@ -83,13 +81,35 @@ export default function ConnectionPage() {
         throw new Error(err?.message || 'Failed to connect');
       }
       setConnected(true);
+      setDisconnected(false);
     } catch (e: any) {
       alert(e?.message || 'Failed to connect');
       setConnected(false);
+      setDisconnected(true);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleDisconnect = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/database/disconnect', { method: 'POST' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('Failed to disconnect:', err);
+        throw new Error(err?.message || 'Failed to disconnect');
+      }
+      setConnected(false);
+      setDisconnected(true);
+    } catch (e: any) {
+      alert(e?.message || 'Failed to disconnect');
+      setConnected(true);
+      setDisconnected(false);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="row">
@@ -99,7 +119,7 @@ export default function ConnectionPage() {
             <h4 className="card-title m-0 me-2">Database Connection</h4>
             <span
               className={`d-inline-block rounded-circle ${indicatorColor}`}
-              style={{ width: 10, height: 10 }}
+              style={{ width: 10, height: 10, marginLeft: '1rem' }}
               aria-label={connected ? 'Connected' : 'Disconnected'}
             />
             {statusChecking && (
@@ -219,6 +239,17 @@ export default function ConnectionPage() {
                     />
                     <label htmlFor="useSsl" className="form-check-label">UseSSL</label>
                   </div>
+                  <div className="form-group mb-3 form-check" style={{ marginLeft: '1rem' }}>
+                    <input
+                        id="useJson"
+                        type="checkbox"
+                        className="form-check-input me-2"
+                        checked={useJson}
+                        onChange={(e) => setUseJson(e.target.checked)}
+                        disabled={connected || loading}
+                    />
+                    <label htmlFor="useJson" className="form-check-label">JSON</label>
+                  </div>
                 </div>
               </div>
 
@@ -238,6 +269,24 @@ export default function ConnectionPage() {
                       <i className="fa fa-plug me-2"></i>
                       Connect
                     </>
+                  )}
+                </button>
+                <button
+                    onClick={handleDisconnect}
+                    className="btn btn-primary"
+                    disabled={disconnected || loading}
+                    style={{ marginLeft: '1rem' }}
+                >
+                  {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Disconnecting...
+                      </>
+                  ) : (
+                      <>
+                        <i className="fa fa-sign-out me-2"></i>
+                        Disconnect
+                      </>
                   )}
                 </button>
               </div>

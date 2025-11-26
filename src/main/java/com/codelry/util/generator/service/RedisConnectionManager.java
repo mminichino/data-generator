@@ -1,6 +1,7 @@
 package com.codelry.util.generator.service;
 
 import com.codelry.util.generator.dto.RedisConnectionConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redis.lettucemod.RedisModulesClient;
 import com.redis.lettucemod.api.StatefulRedisModulesConnection;
 import io.lettuce.core.ClientOptions;
@@ -43,6 +44,7 @@ public class RedisConnectionManager {
   private final AtomicReference<GenericObjectPool<StatefulRedisModulesConnection<String, String>>> connectionPool = new AtomicReference<>();
   private final ClientResources clientResources;
   private volatile boolean connected = false;
+  private volatile boolean useJson = false;
 
   public RedisConnectionManager(ClientResources clientResources) {
     this.clientResources = clientResources;
@@ -64,6 +66,11 @@ public class RedisConnectionManager {
     GenericObjectPool<StatefulRedisModulesConnection<String, String>> pool =
         createConnectionPool(client, config);
     connectionPool.set(pool);
+
+    if (config.isUseJson()) {
+      useJson = true;
+      logger.info("Enabling JSON mode for Redis");
+    }
 
     connected = true;
     logger.info("Successfully connected to Redis");
@@ -94,6 +101,10 @@ public class RedisConnectionManager {
     return !connected || connectionFactory.get() == null;
   }
 
+  public boolean isUseJson() {
+    return useJson;
+  }
+
   public LettuceConnectionFactory getConnectionFactory() {
     if (isNotConnected()) {
       throw new IllegalStateException("Redis is not connected");
@@ -116,7 +127,6 @@ public class RedisConnectionManager {
   }
 
   public ReactiveRedisTemplate<String, String> reactiveRedisTemplate() {
-
     StringRedisSerializer serializer = new StringRedisSerializer();
 
     RedisSerializationContext<String, String> context = RedisSerializationContext
@@ -128,6 +138,21 @@ public class RedisConnectionManager {
         .build();
 
     return new ReactiveRedisTemplate<>(getConnectionFactory(), context);
+  }
+
+  public ReactiveRedisJsonTemplate<String, String> reactiveRedisJsonTemplate() {
+    StringRedisSerializer serializer = new StringRedisSerializer();
+    ObjectMapper mapper = new ObjectMapper();
+
+    RedisSerializationContext<String, String> context = RedisSerializationContext
+        .<String, String>newSerializationContext(serializer)
+        .key(serializer)
+        .value(serializer)
+        .hashKey(serializer)
+        .hashValue(serializer)
+        .build();
+
+    return new ReactiveRedisJsonTemplate<>(getConnectionFactory(), context, mapper);
   }
 
   private LettuceConnectionFactory createConnectionFactory(RedisConnectionConfig config) throws Exception {
