@@ -6,9 +6,7 @@ import com.codelry.util.generator.dto.*;
 import com.codelry.util.generator.service.RedisConnectionManager;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redis.lettucemod.api.StatefulRedisModulesConnection;
-import org.apache.commons.pool2.impl.GenericObjectPool;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -45,11 +43,11 @@ public class GenerateController {
         samples = driver.getRecords();
         logger.info("Samples generated successfully: {} records", samples.size());
       } else {
-        LettuceConnectionFactory factory;
-        factory = redisConnectionManager.getConnectionFactory();
+        logger.info("Inserting generated data using Redis driver");
+        ReactiveRedisTemplate<String, String> reactiveTemplate = redisConnectionManager.reactiveRedisTemplate();
         Redis driver = new Redis();
         driver.init(schema, 1, 10);
-        driver.connect(factory);
+        driver.connect(reactiveTemplate);
         driver.generate();
       }
 

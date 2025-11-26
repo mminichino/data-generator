@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TableSchema, ColumnDefinition } from '../types/schema';
 import ColumnEditor from './ColumnEditor';
 import { generateUUID } from '../lib/utils';
@@ -16,13 +16,12 @@ export default function SchemaEditor({ schema, onSave, onCancel, nosql = false }
   const [editedSchema, setEditedSchema] = useState<TableSchema>(schema);
   const [editingColumn, setEditingColumn] = useState<ColumnDefinition | null>(null);
   const [showColumnEditor, setShowColumnEditor] = useState(false);
-  const prevNameRef = useRef<string>(schema.name);
 
   useEffect(() => {
-    if (nosql && !editedSchema.keyFormat) {
-      setEditedSchema((prev) => ({ ...prev, keyFormat: `{{ table_name }}:{{ uuid }}` }));
+    if (nosql && !editedSchema.keyFormat && !schema.keyFormat) {
+      setEditedSchema((prev) => ({ ...prev, keyFormat: `{{ __table__ }}:{{ __uuid__ }}` }));
     }
-  }, [nosql]);
+  }, [nosql, editedSchema.keyFormat, schema.keyFormat]);
 
   const handleAddColumn = () => {
     const newColumn: ColumnDefinition = {
@@ -70,7 +69,7 @@ export default function SchemaEditor({ schema, onSave, onCancel, nosql = false }
 
   const handleSave = () => {
     if (!editedSchema.name.trim()) {
-      alert('Schema name is required');
+      alert('Table name is required');
       return;
     }
     if (editedSchema.columns.length === 0) {
@@ -110,11 +109,11 @@ export default function SchemaEditor({ schema, onSave, onCancel, nosql = false }
               <input
                 type="text"
                 className="form-control"
-                placeholder="{{ table_name }}:{{ uuid }}"
+                placeholder="{{ __table__ }}:{{ __uuid__ }}"
                 value={editedSchema.keyFormat || ''}
                 onChange={(e) => setEditedSchema({ ...editedSchema, keyFormat: e.target.value })}
               />
-              <small className="form-text text-muted">Default: '{editedSchema.name}', $uuid</small>
+              <small className="form-text text-muted">Default: {'{{'} __table__ {'}}'}:{'{{'} __uuid__ {'}}'}</small>
             </div>
           )}
 

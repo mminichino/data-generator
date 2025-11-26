@@ -19,6 +19,9 @@ import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -110,6 +113,21 @@ public class RedisConnectionManager {
       throw new IllegalStateException("Redis is not connected");
     }
     return connectionPool.get();
+  }
+
+  public ReactiveRedisTemplate<String, String> reactiveRedisTemplate() {
+
+    StringRedisSerializer serializer = new StringRedisSerializer();
+
+    RedisSerializationContext<String, String> context = RedisSerializationContext
+        .<String, String>newSerializationContext(serializer)
+        .key(serializer)
+        .value(serializer)
+        .hashKey(serializer)
+        .hashValue(serializer)
+        .build();
+
+    return new ReactiveRedisTemplate<>(getConnectionFactory(), context);
   }
 
   private LettuceConnectionFactory createConnectionFactory(RedisConnectionConfig config) throws Exception {

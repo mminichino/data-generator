@@ -126,12 +126,11 @@ export default function SchemaCollectionEditor({ schema, onSave, onCancel }: Sch
                   checked={edited.nosql}
                   onChange={(e) => {
                     const checked = e.target.checked;
-                    // When enabling NoSQL, prefill default keyFormat for tables missing one
                     let updatedTables = edited.tables;
                     if (checked) {
                       updatedTables = (edited.tables || []).map(t => ({
                         ...t,
-                        keyFormat: t.keyFormat || `'${t.name}', $uuid`,
+                        keyFormat: t.keyFormat || `{{ __table__ }}:{{ __uuid__ }}`,
                       }));
                     }
                     setEdited({

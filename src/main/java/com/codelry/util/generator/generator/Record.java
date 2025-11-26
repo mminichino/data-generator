@@ -1,6 +1,8 @@
 package com.codelry.util.generator.generator;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,8 +25,7 @@ public class Record {
   }
 
   public Map<String, String> toMap() {
-    Map<String, String> map = new HashMap<>();
-    document.properties().forEach(entry -> map.put(entry.getKey(), entry.getValue().asText()));
-    return map;
+    ObjectMapper mapper = new ObjectMapper();
+    return mapper.convertValue(document, new TypeReference<>() {});
   }
 }

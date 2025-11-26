@@ -31,7 +31,7 @@ public class Generator {
   public Record generate() {
     document = processMain();
     id = processId();
-    logger.info("Generated record: {}", id);
+    logger.debug("Generated record: {}", id);
     return new Record(getId(), getDocument());
   }
 
