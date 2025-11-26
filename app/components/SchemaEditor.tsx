@@ -28,7 +28,7 @@ export default function SchemaEditor({ schema, onSave, onCancel, nosql = false }
       id: generateUUID(),
       name: '',
       type: 'text',
-      nullable: true,
+      nullable: false,
     };
     setEditingColumn(newColumn);
     setShowColumnEditor(true);

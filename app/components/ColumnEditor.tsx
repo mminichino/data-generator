@@ -147,7 +147,6 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
                     setEditedColumn({
                       ...editedColumn,
                       primaryKey: checked,
-                      // Primary Key cannot be nullable
                       nullable: checked ? false : editedColumn.nullable,
                     });
                   }}
@@ -163,13 +162,12 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
                   type="checkbox"
                   className="form-check-input"
                   id={`nullable-${editedColumn.id}`}
-                  checked={!!editedColumn.nullable}
+                  checked={editedColumn.nullable}
                   onChange={(e) => {
                     const checked = e.target.checked;
                     setEditedColumn({
                       ...editedColumn,
                       nullable: checked,
-                      // If allowing nulls, ensure primary key is unset
                       primaryKey: checked ? false : editedColumn.primaryKey,
                     });
                   }}
