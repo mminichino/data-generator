@@ -21,6 +21,9 @@ public class DatabaseManager {
   public static Map<String, List<String>> areaCodeList = new HashMap<>();
   public static Map<String, List<StateRecord>> stateList = new HashMap<>();
   public static LinkedHashMap<String, Double> stateMap = new LinkedHashMap<>();
+  public static Map<String, Integer> nameLengthMap = new HashMap<>();
+  public static Map<String, Integer> addressLengthMap = new HashMap<>();
+  public static Map<String, Integer> productLengthMap = new HashMap<>();
 
   private DatabaseManager() {}
 
@@ -44,6 +47,9 @@ public class DatabaseManager {
       buildAreaCodeList(conn);
       buildStateList(conn);
       buildStateMap(conn);
+      buildNameLengthMap(conn);
+      buildAddressLengthMap(conn);
+      buildProductLengthMap(conn);
       nameCount = getNameCount();
       addressCount = getAddressCount();
       productCount = getProductCount();
@@ -204,6 +210,57 @@ public class DatabaseManager {
     }
   }
 
+  public void buildNameLengthMap(Connection conn) {
+    try {
+      Statement stmt = conn.createStatement();
+      int firstLength = stmt.executeQuery("SELECT MAX(LENGTH(first)) FROM names").getInt(1);
+      int lastLength = stmt.executeQuery("SELECT MAX(LENGTH(last)) FROM names").getInt(1);
+      nameLengthMap.put("first", firstLength);
+      nameLengthMap.put("last", lastLength);
+      nameLengthMap.put("fullName", firstLength + lastLength + 1);
+      nameLengthMap.put("emailAddress", firstLength + lastLength + 1 + 12);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void buildAddressLengthMap(Connection conn) {
+    try {
+      Statement stmt = conn.createStatement();
+      int streetLength = stmt.executeQuery("SELECT MAX(LENGTH(street)) FROM addresses").getInt(1);
+      int cityLength = stmt.executeQuery("SELECT MAX(LENGTH(city)) FROM zipcodes").getInt(1);
+      int stateLength = stmt.executeQuery("SELECT MAX(LENGTH(state)) FROM zipcodes").getInt(1);
+      int zipLength = stmt.executeQuery("SELECT MAX(LENGTH(zip)) FROM zipcodes").getInt(1);
+      addressLengthMap.put("street", streetLength);
+      addressLengthMap.put("city", cityLength);
+      addressLengthMap.put("state", stateLength);
+      addressLengthMap.put("zip", zipLength);
+      addressLengthMap.put("streetAddress", 6 + streetLength);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void buildProductLengthMap(Connection conn) {
+    try {
+      Statement stmt = conn.createStatement();
+      int nameLength = stmt.executeQuery("SELECT MAX(LENGTH(name)) FROM products").getInt(1);
+      int manufacturerLength = stmt.executeQuery("SELECT MAX(LENGTH(manufacturer)) FROM products").getInt(1);
+      int categoryLength = stmt.executeQuery("SELECT MAX(LENGTH(category)) FROM products").getInt(1);
+      int subcategoryLength = stmt.executeQuery("SELECT MAX(LENGTH(subcategory)) FROM products").getInt(1);
+      int skuLength = stmt.executeQuery("SELECT MAX(LENGTH(sku)) FROM products").getInt(1);
+      int departmentLength = stmt.executeQuery("SELECT MAX(LENGTH(department)) FROM products").getInt(1);
+      productLengthMap.put("name", nameLength);
+      productLengthMap.put("manufacturer", manufacturerLength);
+      productLengthMap.put("category", categoryLength);
+      productLengthMap.put("subcategory", subcategoryLength);
+      productLengthMap.put("sku", skuLength);
+      productLengthMap.put("department", departmentLength);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public String getState(double weight) {
     return stateMap.entrySet().stream()
         .filter(entry -> entry.getValue() >= weight)
@@ -234,5 +291,17 @@ public class DatabaseManager {
 
   public List<String> getAreaCodesByState(String state) {
     return areaCodeList.getOrDefault(state, new ArrayList<>());
+  }
+
+  public int getNameFieldLength(String field) {
+    return nameLengthMap.getOrDefault(field, 16);
+  }
+
+  public int getAddressFieldLength(String field) {
+    return addressLengthMap.getOrDefault(field, 128);
+  }
+
+  public int getProductFieldLength(String field) {
+    return productLengthMap.getOrDefault(field, 256);
   }
 }

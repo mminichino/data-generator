@@ -1,0 +1,40 @@
+{
+  "id": "419f5892-7efe-450d-bead-41eb7d50a9a3",
+  "name": "order_entry",
+  "nosql": true,
+  "tables": [
+    {
+      "id": "e180e0ef-7651-4742-a497-cf91a11aa527",
+      "name": "customers",
+      "columns": [
+        {
+          "id": "cc4b4d47-9dce-4ca4-9bc7-0f4b8d670bc3",
+          "name": "id",
+          "type": "sequentialNumber",
+          "nullable": false,
+          "primaryKey": true
+        },
+        {
+          "id": "17af0776-1d61-49bb-a17c-c4010e7f1223",
+          "name": "first_name",
+          "type": "firstName",
+          "nullable": false
+        },
+        {
+          "id": "3fd1a9cc-eb4c-43de-b1e2-561551f90e90",
+          "name": "last_name",
+          "type": "lastName",
+          "nullable": false
+        },
+        {
+          "id": "0a06bd02-d979-42c1-a6a1-4e7df4e72584",
+          "name": "email",
+          "type": "email",
+          "nullable": false
+        }
+      ],
+      "keyFormat": "{{ __table__ }}:{{ id | zero_pad(5) }}",
+      "count": 100
+    }
+  ]
+}
