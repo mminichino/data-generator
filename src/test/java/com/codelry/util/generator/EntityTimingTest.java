@@ -3,18 +3,22 @@ package com.codelry.util.generator;
 import com.codelry.util.generator.dto.*;
 import com.codelry.util.generator.generator.EntityLoad;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class EntityGenerationTest {
-  private static final Logger logger = LoggerFactory.getLogger(EntityGenerationTest.class);
+public class EntityTimingTest {
+  private static final Logger logger = LoggerFactory.getLogger(EntityTimingTest.class);
   private static final ObjectMapper mapper = new ObjectMapper();
   private static EntityCollection schema;
 
@@ -55,46 +59,25 @@ public class EntityGenerationTest {
   }
 
   @Test
-  public void testSchemaCollection() {
-    for (EntityDefinition entity : schema.getEntities()) {
-      for (FieldDefinition field : entity.getFields()) {
-        logger.info("{} {}", field.getName(), field.getType());
-      }
-    }
-  }
-
-  @Test
-  public void testSchemaSerialization() {
-    for (EntityDefinition entity : schema.getEntities()) {
-      for (FieldDefinition field : entity.getFields()) {
-        logger.info("{} length {}", field.getDataType(), field.getLength());
-      }
-    }
-  }
-
-  @Test
   public void testDriverBasic() {
+    MeterRegistry registry = new SimpleMeterRegistry();
     TestDriver driver = new TestDriver();
-    driver.init(schema, 1, 3);
+    driver.init(schema, 1, 1000, registry);
     driver.generate();
-    List<Entity> records = driver.getRecords();
-    for (Entity entity : records) {
-      logger.info("ID: {}", entity.getId());
-      for (Field field : entity.getFields()) {
-        logger.info("Field: {} = {}", field.getName(), field.getValue());
-      }
-    }
-  }
-
-  @Test
-  public void testDriverJson() {
-    TestDriver driver = new TestDriver();
-    driver.init(schema, 1, 3);
-    driver.generate();
-    List<Entity> records = driver.getRecords();
-    for (Entity entity : records) {
-      logger.info("ID: {}", entity.getId());
-      logger.info("\n{}", entity.asJson().toPrettyString());
-    }
+    Timer recordTimer = registry.find("entity.generator.record.duration")
+        .tags("entity", "generator")
+        .timer();
+    Timer keyTimer = registry.find("entity.generator.key.duration")
+        .tags("entity", "generator")
+        .timer();
+    Assertions.assertNotNull(recordTimer);
+    logger.info("Total records: {}", recordTimer.count());
+    logger.info("Total time  : {}", recordTimer.totalTime(TimeUnit.MILLISECONDS));
+    logger.info("Average time: {}", recordTimer.mean(TimeUnit.MILLISECONDS));
+    logger.info("Max time    : {}", recordTimer.max(TimeUnit.MILLISECONDS));
+    Assertions.assertNotNull(keyTimer);
+    logger.info("Total time  : {}", keyTimer.totalTime(TimeUnit.MILLISECONDS));
+    logger.info("Average time: {}", keyTimer.mean(TimeUnit.MILLISECONDS));
+    logger.info("Max time    : {}", keyTimer.max(TimeUnit.MILLISECONDS));
   }
 }

@@ -2,6 +2,8 @@ package com.codelry.util.generator.dto;
 
 import com.codelry.util.generator.db.DatabaseManager;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+
 import java.util.Map;
 
 public class FieldDefinition {
@@ -13,8 +15,6 @@ public class FieldDefinition {
   private String name;
 
   private TypeMapping dataType;
-
-  @JsonProperty("type")
   private ColumnType type;
 
   private String columnName;
@@ -48,37 +48,16 @@ public class FieldDefinition {
     this.type = type;
   }
 
-  public void setDataTypeFromType() {
-    switch (type) {
-      case SEQUENTIAL_NUMBER:
-        setDataType(TypeMapping.LONG);
-        break;
-      case BOOLEAN:
-        setDataType(TypeMapping.BOOLEAN);
-        break;
-      case NUMBER:
-        boolean isDecimal = this.options.containsKey("isDecimal") && Boolean.parseBoolean(this.options.get("isDecimal").toString());
-        if (isDecimal) {
-          setDataType(TypeMapping.DOUBLE);
-        } else {
-          setDataType(TypeMapping.LONG);
-        }
-        break;
-      case DOLLAR_AMOUNT:
-        setDataType(TypeMapping.FLOAT);
-        break;
-      case DATE, TIMESTAMP:
-        setDataType(TypeMapping.LOCAL_DATE_TIME);
-        break;
-      default:
-        setDataType(TypeMapping.STRING);
-        break;
-    }
+  @JsonSetter("type")
+  public void setFromType(String type) {
+    this.dataType = TypeMapping.fromJsonProperty(type);
+    this.type = ColumnType.fromText(type);
+    setDataLengthFromType();
   }
 
   public void setDataLengthFromType() {
     DatabaseManager databaseManager = DatabaseManager.getInstance();
-    switch (type) {
+    switch (this.type) {
       case FIRST_NAME:
         setLength(databaseManager.getNameFieldLength("first"));
         break;
@@ -102,6 +81,39 @@ public class FieldDefinition {
         break;
       case ZIPCODE:
         setLength(databaseManager.getAddressFieldLength("zip"));
+        break;
+      case UUID:
+        setLength(36);
+        break;
+      case CREDIT_CARD:
+        setLength(16);
+        break;
+      case PHONE_NUMBER:
+        setLength(10);
+        break;
+      case ACCOUNT_NUMBER:
+        setLength(12);
+        break;
+      case TEXT, SET:
+        setLength(255);
+        break;
+      case MAC_ADDRESS:
+        setLength(17);
+        break;
+      case IP_ADDRESS:
+        setLength(15);
+        break;
+      case PRODUCT_NAME:
+        setLength(databaseManager.getProductFieldLength("name"));
+        break;
+      case PRODUCT_TYPE:
+        setLength(databaseManager.getProductFieldLength("category"));
+        break;
+      case MANUFACTURER:
+        setLength(databaseManager.getProductFieldLength("manufacturer"));
+        break;
+      default:
+        break;
     }
   }
 

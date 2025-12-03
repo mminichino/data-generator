@@ -1,6 +1,7 @@
 package com.codelry.util.generator.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 
 import java.util.Map;
 
@@ -12,7 +13,6 @@ public class Column {
     @JsonProperty("name")
     public String name;
 
-    @JsonProperty("type")
     public ColumnType type;
 
     @JsonProperty("nullable")
@@ -33,6 +33,11 @@ public class Column {
         this.type = type;
         this.nullable = nullable;
         this.options = options;
+    }
+
+    @JsonSetter("type")
+    public void setFromType(String type) {
+        this.type = ColumnType.fromText(type);
     }
 
     public String getId() {

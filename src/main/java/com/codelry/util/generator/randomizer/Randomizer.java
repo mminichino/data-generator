@@ -86,8 +86,12 @@ public class Randomizer {
     return timeFormat.format(time);
   }
 
+  public Date dateNow() {
+    return new Date();
+  }
+
   public String timestamp() {
-    Date date = new Date();
+    Date date = dateNow();
     SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     return timeFormat.format(date);
   }

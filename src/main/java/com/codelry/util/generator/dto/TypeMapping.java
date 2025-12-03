@@ -1,5 +1,7 @@
 package com.codelry.util.generator.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 
@@ -41,5 +43,17 @@ public enum TypeMapping {
   public static Class<?> getClassFromString(String text) {
     TypeMapping enumValue = fromString(text);
     return enumValue.getDataClass();
+  }
+
+  @JsonCreator
+  public static TypeMapping fromJsonProperty(String jsonValue) {
+    return switch (jsonValue) {
+      case "sequentialNumber" -> LONG;
+      case "boolean" -> BOOLEAN;
+      case "number" -> INTEGER;
+      case "dollarAmount" -> DOUBLE;
+      case "date", "timestamp" -> LOCAL_DATE_TIME;
+      default -> STRING;
+    };
   }
 }
