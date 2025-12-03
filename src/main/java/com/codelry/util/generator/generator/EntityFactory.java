@@ -20,15 +20,17 @@ public class EntityFactory {
   private ExecutorService loadExecutor;
   private static final AtomicLong counter = new AtomicLong(0);
   private final EntityDefinition definition;
+  private final KeyGenerator keyGenerator;
   private int batchSize = 32;
   private final long count;
   private Thread runThread;
-  private MeterRegistry registry;
+  private final MeterRegistry registry;
 
   public EntityFactory(EntityDefinition definition, long start, long count, MeterRegistry registry) {
     this.loadExecutor = Executors.newFixedThreadPool(64);
     this.recordQueue = new LinkedBlockingQueue<>(32);
     this.definition = definition;
+    this.keyGenerator = new KeyGenerator(definition, registry);
     counter.set(start);
     this.count = count;
     this.batchSize = (this.batchSize > count) ? (int) count : this.batchSize;
@@ -56,6 +58,10 @@ public class EntityFactory {
     for (Future<Entity> future : loadTasks) {
       try {
         Entity entity = future.get();
+        if (definition.isNosql()) {
+          String key = keyGenerator.generate(entity);
+          entity.setId(key);
+        }
         LOGGER.debug("Record added to queue {}", entity.getId());
         recordQueue.put(entity);
       } catch (ExecutionException e) {

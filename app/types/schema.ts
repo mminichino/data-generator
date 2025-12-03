@@ -62,10 +62,11 @@ export interface SchemaCollection {
 }
 
 export interface DatabaseConnection {
-    type: 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver';
-    host: string;
+    type: 'redis' | 'postgres' | 'mysql' | 'sqlite' | 'sqlserver';
+    hostname: string;
     port: number;
     database: string;
+    schema: string;
     username: string;
     password: string;
     ssl?: boolean;

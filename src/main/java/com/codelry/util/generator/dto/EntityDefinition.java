@@ -9,6 +9,7 @@ public class EntityDefinition {
   public String id;
 
   private String entityName;
+  private boolean nosql = false;
 
   @JsonProperty("name")
   private String tableName;
@@ -44,6 +45,14 @@ public class EntityDefinition {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+  public boolean isNosql() {
+    return nosql;
+  }
+
+  public void setNosql(boolean nosql) {
+    this.nosql = nosql;
   }
 
   public int getCount() {

@@ -1,19 +1,21 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSchemaStore } from '../store/SchemaStore';
 
-type DbType = 'redis' | 'postgres';
+type DbType = 'redis' | 'postgres' | 'mysql' | 'sqlite' | 'sqlserver';
 
 export default function ConnectionPage() {
-  const [type, setType] = useState<DbType>('redis');
-  const [hostname, setHostname] = useState<string>('localhost');
-  const [port, setPort] = useState<string>('6379');
-  const [username, setUsername] = useState<string>('default');
-  const [password, setPassword] = useState<string>('');
-  const [database, setDatabase] = useState<string>('0');
-  const [schema, setSchema] = useState<string>('');
-  const [useSsl, setUseSsl] = useState<boolean>(false);
-  const [useJson, setUseJson] = useState<boolean>(false);
+  const { connection, setConnection } = useSchemaStore();
+  const [type, setType] = useState<DbType>(connection?.type || 'redis');
+  const [hostname, setHostname] = useState<string>(connection?.hostname || 'localhost');
+  const [port, setPort] = useState<string>(connection?.port?.toString() || '6379');
+  const [username, setUsername] = useState<string>(connection?.username || 'default');
+  const [password, setPassword] = useState<string>(connection?.password || '');
+  const [database, setDatabase] = useState<string>(connection?.database || '0');
+  const [schema, setSchema] = useState<string>(connection?.schema || '');
+  const [useSsl, setUseSsl] = useState<boolean>(connection?.ssl || false);
+  const [useJson, setUseJson] = useState<boolean>(connection?.json || false);
 
   const [connected, setConnected] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -24,20 +26,18 @@ export default function ConnectionPage() {
 
   useEffect(() => {
     if (type === 'redis') {
-      setPort('6379');
-      setUsername('default');
-      setDatabase('0');
-      setSchema('');
+      setPort(connection?.port?.toString() || '6379');
+      setUsername(connection?.username || 'default');
+      setDatabase(connection?.database || '0');
+      setSchema(connection?.schema || '');
     } else if (type === 'postgres') {
-      setPort('5432');
-      setUsername('postgres');
-      // Leave database empty for postgres by default
-      setDatabase('');
-      setSchema('public');
+      setPort(connection?.port?.toString() || '5432');
+      setUsername(connection?.username || 'postgres');
+      setDatabase(connection?.database || '');
+      setSchema(connection?.schema || 'public');
     }
   }, [type]);
 
-  // Check connection status on mount
   useEffect(() => {
     const checkStatus = async () => {
       try {
@@ -61,7 +61,7 @@ export default function ConnectionPage() {
     try {
       const payload = {
         type,
-        hostname: hostname,
+        hostname,
         port: Number(port),
         username,
         password,
@@ -70,6 +70,7 @@ export default function ConnectionPage() {
         useSsl,
         useJson,
       };
+      setConnection(payload);
       const res = await fetch('/api/database/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

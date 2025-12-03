@@ -5,13 +5,14 @@ import { useSchemaStore } from '../store/SchemaStore';
 import { SchemaCollection, TableSchema } from '../types/schema';
 
 export default function GeneratePage() {
-  const { schemas } = useSchemaStore();
+  const { schemas, connection } = useSchemaStore();
   const [selectedSchema, setSelectedSchema] = useState('');
   const [rowCount, setRowCount] = useState(100);
   const [generatedData, setGeneratedData] = useState<any[]>([]);
 
   const handleGenerate = async () => {
     const schemaCollection = schemas.find(s => s.id === selectedSchema);
+    const type = connection?.type;
 
     if (!schemaCollection) {
       alert('Please select a schema');
@@ -25,7 +26,7 @@ export default function GeneratePage() {
     };
 
     try {
-      const response = await fetch('/api/generate', {
+      const response = await fetch(`/api/generate?target=${type}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

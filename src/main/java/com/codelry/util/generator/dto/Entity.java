@@ -6,10 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Entity {
   public String id;
+  public long index;
   public List<Field> fields = new ArrayList<>();
 
   public Entity(String id, List<Field> fields) {
@@ -21,13 +24,24 @@ public class Entity {
 
   public String getId() { return id; }
 
+  public long getIndex() { return index; }
+
   public List<Field> getFields() { return fields; }
 
   public void setId(String id) { this.id = id; }
 
+  public void setIndex(long index) { this.index = index; }
+
   public void setFields(List<Field> fields) { this.fields = fields; }
 
   public void addField(Field field) { fields.add(field); }
+
+  public Map<String, String> asMap() {
+    Map<String, String> map = new HashMap<>();
+    getFields().forEach(field ->
+        map.put(field.getName(), String.valueOf(field.getValue())));
+    return map;
+  }
 
   public JsonNode asJson() {
     ObjectMapper mapper = new ObjectMapper();

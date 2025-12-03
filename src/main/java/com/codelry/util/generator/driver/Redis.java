@@ -1,7 +1,7 @@
 package com.codelry.util.generator.driver;
 
-import com.codelry.util.generator.generator.DataLoad;
-import com.codelry.util.generator.generator.Record;
+import com.codelry.util.generator.dto.Entity;
+import com.codelry.util.generator.generator.EntityLoad;
 import com.codelry.util.generator.service.ReactiveRedisJsonTemplate;
 import io.lettuce.core.RedisException;
 import org.springframework.data.redis.core.ReactiveHashOperations;
@@ -16,7 +16,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Redis extends DataLoad {
+public class Redis extends EntityLoad {
   private static final Logger logger = LoggerFactory.getLogger(Redis.class);
   private ReactiveHashOperations<String, String, String> hashOps;
   private ReactiveRedisJsonTemplate<String, String> jsonOps;
@@ -36,24 +36,24 @@ public class Redis extends DataLoad {
   @Override
   public void prepare() {}
 
-  private void insertBatchHash(List<Record> batch) {
+  private void insertBatchHash(List<Entity> batch) {
     Flux.fromIterable(batch)
-        .flatMap(record -> hashOps.putAll(record.documentId, record.toMap()))
+        .flatMap(record -> hashOps.putAll(record.getId(), record.asMap()))
         .retryWhen(Retry.backoff(10, Duration.ofMillis(10)).filter(t -> t instanceof RedisException))
         .doOnError(errorQueue::put)
         .blockLast();
   }
 
-  private void insertBatchJson(List<Record> batch) {
+  private void insertBatchJson(List<Entity> batch) {
     Flux.fromIterable(batch)
-        .flatMap(record -> jsonOps.jsonSet(record.documentId, "$", record.document))
+        .flatMap(record -> jsonOps.jsonSet(record.getId(), "$", record.asJson()))
         .retryWhen(Retry.backoff(10, Duration.ofMillis(10)).filter(t -> t instanceof RedisException))
         .doOnError(errorQueue::put)
         .blockLast();
   }
 
   @Override
-  public void insertBatch(List<Record> batch) {
+  public void insertBatch(List<Entity> batch) {
     if (useJson) {
       insertBatchJson(batch);
     } else {

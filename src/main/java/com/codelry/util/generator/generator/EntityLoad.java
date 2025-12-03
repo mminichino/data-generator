@@ -13,8 +13,17 @@ public abstract class EntityLoad {
   private static int batchSize = 100;
   private long recordCount = 1;
   private long recordStart = 1;
+  private boolean dynamicCount = false;
   public EntityCollection schema;
   public MeterRegistry registry;
+
+  public void init(EntityCollection schema, long start) {
+    this.schema = schema;
+    this.recordCount = 0;
+    this.dynamicCount = true;
+    this.recordStart = start;
+    this.registry = new SimpleMeterRegistry();
+  }
 
   public void init(EntityCollection schema, long start, long count) {
     this.schema = schema;
@@ -39,9 +48,10 @@ public abstract class EntityLoad {
   public abstract void insertBatch(List<Entity> batch);
 
   public void generate() {
-    LOGGER.info("Generate start {} count {}", recordStart, recordCount);
     for (EntityDefinition definition : schema.getEntities()) {
-      LOGGER.info("Generating data for schema {}", schema.getName());
+      recordCount = dynamicCount ? definition.getCount() : recordCount;
+      LOGGER.info("Generate start {} count {} for schema {}", recordStart, recordCount, schema.getName());
+      definition.setNosql(schema.isNosql());
       EntityFactory factory = new EntityFactory(definition, recordStart, recordCount, registry);
       factory.setIndex(0);
       factory.start();

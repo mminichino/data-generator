@@ -33,7 +33,7 @@
           "nullable": false
         }
       ],
-      "keyFormat": "{{ __table__ }}:{{ id | zero_pad(5) }}",
+      "keyFormat": "{{ __table__ }}:{{ id }}",
       "count": 100
     }
   ]

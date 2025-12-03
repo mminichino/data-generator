@@ -81,7 +81,7 @@ export default function SchemaCollectionEditor({ schema, onSave, onCancel }: Sch
         nosql: edited.nosql,
         tables: [table],
       };
-      const resp = await fetch('/api/generate?sample=true', {
+      const resp = await fetch('/api/generate?target=samples', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(collectionForSample),

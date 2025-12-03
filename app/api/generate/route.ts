@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
-        const sample = searchParams.get('sample') === 'true';
+        const target = searchParams.get('target');
         const body = await request.json();
-        console.log(`Generate body: ${JSON.stringify(body)} sample=${sample}`)
-        const backendResponse = await fetch(`http://localhost:8084/api/generate${sample ? '?sample=true' : ''}`, {
+        console.log(`Generate body: ${JSON.stringify(body)} target=${target}`)
+        const backendResponse = await fetch(`http://localhost:8084/api/generate/${target || 'samples'}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
