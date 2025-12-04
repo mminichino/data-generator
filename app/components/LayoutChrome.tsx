@@ -5,36 +5,48 @@ import UserMenu from './UserMenu';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '../store/auth/AuthStore';
 import React from 'react';
-import Script from 'next/script';
+// Temporarily disable theme JS loader to avoid blank screens caused by vendor scripts
+// import ThemeScripts from './ThemeScripts';
 
 export default function LayoutChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const currentUser = useAuthStore((s) => s.currentUser);
+  const hydrated = useAuthStore((s) => (s as any).hydrated ?? false);
 
-  if (!currentUser && pathname !== '/login') {
-    return (
-      <div style={{ minHeight: '100vh' }}>
-        <AuthGate>
-          <></>
-        </AuthGate>
-      </div>
-    );
+  if (pathname !== '/login') {
+    // While auth store is hydrating, avoid rendering empty chrome; show a minimal placeholder
+    if (!hydrated) {
+      return (
+        <div style={{ minHeight: '100vh' }} className="d-flex align-items-center justify-content-center">
+          <div>Loading…</div>
+        </div>
+      );
+    }
+    // If not logged in, mount AuthGate so it can redirect us to /login
+    if (!currentUser) {
+      return (
+        <div style={{ minHeight: '100vh' }}>
+          <AuthGate>
+            <></>
+          </AuthGate>
+        </div>
+      );
+    }
   }
 
   if (pathname === '/login') {
     return (
       <div style={{ minHeight: '100vh' }} className="d-flex align-items-center justify-content-center bg-light">
         <div className="container">
-          <AuthGate>
-            {children}
-          </AuthGate>
+          {/* Do NOT wrap login with AuthGate; the login page handles redirect itself */}
+          {children}
         </div>
       </div>
     );
   }
 
   return (
-    <div id="main-wrapper">
+    <div id="main-wrapper" className="show">
       {/* Nav Header */}
       <div className="nav-header">
         <a href="/" className="brand-logo">
@@ -120,15 +132,8 @@ export default function LayoutChrome({ children }: { children: React.ReactNode }
           <p>Copyright © Data Generator 2025</p>
         </div>
       </div>
-      <Script id="jquery-core" src="/theme/assets/js/lib/data-table/jquery-3.6.0.min.js" strategy="afterInteractive"/>
-      <Script id="jquery-global-bridge" strategy="afterInteractive">
-        {`window.$ = window.$ || window.jQuery;`}
-      </Script>
-      <Script src="/theme/vendor/global/global.min.js" strategy="afterInteractive" />
-      <Script src="/theme/vendor/metismenu/js/metisMenu.min.js" strategy="afterInteractive" />
-      <Script src="/theme/vendor/bootstrap-select/dist/js/bootstrap-select.min.js" strategy="afterInteractive" />
-      <Script src="/theme/js/custom.min.js" strategy="afterInteractive" />
-      <Script src="/theme/js/quixnav-init.js" strategy="afterInteractive" />
+      {/* Theme scripts disabled for stability; re-enable after root cause is fixed */}
+      {null}
     </div>
   );
 }

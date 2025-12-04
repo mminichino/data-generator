@@ -13,6 +13,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Prefetch home to make the post-login transition snappy
+  useEffect(() => {
+    router.prefetch('/');
+  }, [router]);
+
   useEffect(() => {
     if (currentUser) {
       router.replace('/');
@@ -30,7 +35,8 @@ export default function LoginPage() {
         return;
       }
       router.push('/');
-      router.refresh();
+      setTimeout(() => router.refresh(), 0);
+      setTimeout(() => router.replace('/'), 50);
     } finally {
       setLoading(false);
     }
