@@ -26,7 +26,7 @@ export default function UserMenu() {
         onClick={() => setOpen((o) => !o)}
         type="button"
       >
-        {currentUser}
+        {currentUser.username}
       </button>
       <div
         className={`dropdown-menu dropdown-menu-end ${open ? 'show' : ''}`}
