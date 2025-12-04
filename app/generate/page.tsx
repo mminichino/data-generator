@@ -19,7 +19,6 @@ export default function GeneratePage() {
       return;
     }
 
-    // apply rowCount per table
     const payload: SchemaCollection = {
       ...schemaCollection,
       tables: (schemaCollection.tables || []).map((t: TableSchema) => ({ ...t, count: rowCount })),
@@ -41,7 +40,6 @@ export default function GeneratePage() {
       }
 
       const result = await response.json();
-      // For now, backend returns a success message; you can extend to include generated data per table later.
       console.log('Generate result:', result);
       alert(`Generated data successfully!`);
     } catch (error) {
