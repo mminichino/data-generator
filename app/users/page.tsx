@@ -76,8 +76,8 @@ export default function UsersAdminPage() {
                     <tr key={u}>
                       <td>
                         {u}
-                        {u === 'admin' && <span className="badge light badge-primary ms-2">admin</span>}
-                        {u === currentUser && <span className="badge light badge-success ms-2">current</span>}
+                        {u === 'admin' && <span className="badge light badge-primary ms-2" style={{ marginLeft: '1rem' }}>admin</span>}
+                        {u === currentUser && <span className="badge light badge-success ms-2" style={{ marginLeft: '1rem' }}>current</span>}
                       </td>
                       <td>
                         <button className="btn btn-sm btn-secondary me-2" onClick={() => handleChangePassword(u)}>
@@ -87,6 +87,7 @@ export default function UsersAdminPage() {
                           className="btn btn-sm btn-danger"
                           disabled={u === 'admin'}
                           onClick={() => handleDelete(u)}
+                          style={{ marginLeft: '1rem' }}
                         >
                           Delete
                         </button>

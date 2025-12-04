@@ -5,8 +5,6 @@ import UserMenu from './UserMenu';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '../store/auth/AuthStore';
 import React from 'react';
-// Temporarily disable theme JS loader to avoid blank screens caused by vendor scripts
-// import ThemeScripts from './ThemeScripts';
 
 export default function LayoutChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,7 +12,6 @@ export default function LayoutChrome({ children }: { children: React.ReactNode }
   const hydrated = useAuthStore((s) => (s as any).hydrated ?? false);
 
   if (pathname !== '/login') {
-    // While auth store is hydrating, avoid rendering empty chrome; show a minimal placeholder
     if (!hydrated) {
       return (
         <div style={{ minHeight: '100vh' }} className="d-flex align-items-center justify-content-center">
@@ -22,7 +19,6 @@ export default function LayoutChrome({ children }: { children: React.ReactNode }
         </div>
       );
     }
-    // If not logged in, mount AuthGate so it can redirect us to /login
     if (!currentUser) {
       return (
         <div style={{ minHeight: '100vh' }}>
@@ -38,7 +34,6 @@ export default function LayoutChrome({ children }: { children: React.ReactNode }
     return (
       <div style={{ minHeight: '100vh' }} className="d-flex align-items-center justify-content-center bg-light">
         <div className="container">
-          {/* Do NOT wrap login with AuthGate; the login page handles redirect itself */}
           {children}
         </div>
       </div>
@@ -125,15 +120,6 @@ export default function LayoutChrome({ children }: { children: React.ReactNode }
           </AuthGate>
         </div>
       </div>
-
-      {/* Footer */}
-      <div className="footer">
-        <div className="copyright">
-          <p>Copyright © Data Generator 2025</p>
-        </div>
-      </div>
-      {/* Theme scripts disabled for stability; re-enable after root cause is fixed */}
-      {null}
     </div>
   );
 }
