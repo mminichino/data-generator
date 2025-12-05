@@ -1,15 +1,51 @@
-version: "3.9"
-
 services:
   redis:
     image: redis:8.4
     container_name: generator-db
+    command: ["redis-server", "--port", "10000", "--appendonly", "yes"]
     ports:
-      - "10000:6379"
+      - "10000:10000"
     volumes:
       - redis_data:/data
-    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+
+  backend:
+    image: gradle:8.10-jdk21
+    container_name: generator-backend
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+      - gradle_cache:/home/gradle/.gradle
+    command: ./gradlew bootRun
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_ADDRESS: 0.0.0.0
+      SERVER_PORT: "8084"
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+
+  frontend:
+    image: node:20-alpine
+    container_name: generator-app
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - node_modules_cache:/app/node_modules
+    command: sh -c "npm ci && npm run dev -- -p 8080 --hostname 0.0.0.0"
+    environment:
+      BACKEND_HOST: generator-backend
+      BACKEND_PORT: "8084"
+      REDIS_HOST: generator-db
+      REDIS_PORT: "10000"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+      - redis
     restart: unless-stopped
 
 volumes:
   redis_data:
+  gradle_cache:
+  node_modules_cache:

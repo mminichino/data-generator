@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { BACKEND_HOST, BACKEND_PORT } from "@/app/config";
 
 export async function POST() {
     try {
-        const backendResponse = await fetch('http://localhost:8084/api/database/disconnect', {
+        const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/database/disconnect`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
