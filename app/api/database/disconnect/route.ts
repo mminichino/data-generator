@@ -1,12 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { BACKEND_HOST, BACKEND_PORT } from "@/app/config";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
     try {
-        const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/database/disconnect`, {
+        const userId = request.headers.get('x-user-id') || '';
+        const { searchParams } = new URL(request.url);
+        const target = searchParams.get('target');
+        const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/database/connect/${target}/disconnect`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(userId ? { 'X-User-Id': userId } : {}),
             },
         });
 

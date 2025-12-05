@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSchemaStore } from '../store/SchemaStore';
 import { SchemaCollection, TableSchema } from '../types/schema';
+import { getUserId } from '../lib/utils';
 
 export default function GeneratePage() {
   const { schemas, connection } = useSchemaStore();
@@ -29,6 +30,7 @@ export default function GeneratePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-User-Id': getUserId(),
         },
         body: JSON.stringify(payload),
       });

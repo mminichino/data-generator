@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { SchemaCollection, TableSchema, ColumnDefinition } from '../types/schema';
 import SchemaEditor from './SchemaEditor';
-import { generateUUID } from '../lib/utils';
+import { generateUUID, getUserId } from '../lib/utils';
 
 interface SchemaCollectionEditorProps {
   schema: SchemaCollection;
@@ -83,7 +83,7 @@ export default function SchemaCollectionEditor({ schema, onSave, onCancel }: Sch
       };
       const resp = await fetch('/api/generate?target=samples', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-User-Id': getUserId() },
         body: JSON.stringify(collectionForSample),
       });
       if (!resp.ok) {

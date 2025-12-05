@@ -1,9 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { BACKEND_HOST, BACKEND_PORT } from "@/app/config";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
-        const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/database/status`);
+        const userId = request.headers.get('x-user-id') || '';
+        const { searchParams } = new URL(request.url);
+        const target = searchParams.get('target');
+        const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/database/connect/${target}/status`, {
+            headers: {
+                ...(userId ? { 'X-User-Id': userId } : {}),
+            }
+        });
         if (!backendResponse.ok) {
             console.log(`Status responded with: ${backendResponse.status}`);
             return NextResponse.json(
