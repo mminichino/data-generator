@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSchemaStore } from '../store/SchemaStore';
+import { getUserId } from '../lib/utils';
 
 type DbType = 'redis' | 'postgres' | 'mysql' | 'sqlite' | 'sqlserver';
 
@@ -42,7 +43,9 @@ export default function ConnectionPage() {
     const checkStatus = async () => {
       try {
         setStatusChecking(true);
-        const res = await fetch('/api/database/status');
+        const res = await fetch(`/api/database/status?target=${type}`, {
+          headers: { 'X-User-Id': getUserId() }
+        });
         if (res.ok) {
           const json = await res.json();
           setConnected(Boolean(json?.connected));
@@ -71,9 +74,9 @@ export default function ConnectionPage() {
         useJson,
       };
       setConnection(payload);
-      const res = await fetch('/api/database/connect', {
+      const res = await fetch(`/api/database/connect?target=${type}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-User-Id': getUserId() },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
@@ -95,7 +98,7 @@ export default function ConnectionPage() {
   const handleDisconnect = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/database/disconnect', { method: 'POST' });
+      const res = await fetch(`/api/database/disconnect?target=${type}`, { method: 'POST', headers: { 'X-User-Id': getUserId() } });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         console.error('Failed to disconnect:', err);

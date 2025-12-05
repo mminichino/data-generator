@@ -31,102 +31,109 @@ import javax.net.ssl.TrustManagerFactory;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class RedisConnectionManager {
 
   private static final Logger logger = LoggerFactory.getLogger(RedisConnectionManager.class);
 
-  private final AtomicReference<LettuceConnectionFactory> connectionFactory = new AtomicReference<>();
-  private final AtomicReference<ReactiveRedisConnectionFactory> reactiveFactory = new AtomicReference<>();
-  private final AtomicReference<RedisModulesClient> modulesClient = new AtomicReference<>();
-  private final AtomicReference<GenericObjectPool<StatefulRedisModulesConnection<String, String>>> connectionPool = new AtomicReference<>();
+  private final Map<String, LettuceConnectionFactory> connectionFactories = new ConcurrentHashMap<>();
+  private final Map<String, ReactiveRedisConnectionFactory> reactiveFactories = new ConcurrentHashMap<>();
+  private final Map<String, RedisModulesClient> modulesClients = new ConcurrentHashMap<>();
+  private final Map<String, GenericObjectPool<StatefulRedisModulesConnection<String, String>>> connectionPools = new ConcurrentHashMap<>();
   private final ClientResources clientResources;
-  private volatile boolean connected = false;
-  private volatile boolean useJson = false;
+  private final Map<String, Boolean> connectedByUser = new ConcurrentHashMap<>();
+  private final Map<String, Boolean> useJsonByUser = new ConcurrentHashMap<>();
 
   public RedisConnectionManager(ClientResources clientResources) {
     this.clientResources = clientResources;
   }
 
-  public synchronized void connect(RedisConnectionConfig config) throws Exception {
-    disconnect();
+  public synchronized void connect(String userId, RedisConnectionConfig config) throws Exception {
+    disconnect(userId);
 
-    logger.info("Connecting to Redis: {}:{}", config.getHost(), config.getPort());
+    logger.info("[userId={}] Connecting to Redis: {}:{}", userId, config.getHost(), config.getPort());
 
     LettuceConnectionFactory factory = createConnectionFactory(config);
     factory.afterPropertiesSet();
     factory.start();
-    connectionFactory.set(factory);
+    connectionFactories.put(userId, factory);
 
     RedisModulesClient client = createModulesClient(config);
-    modulesClient.set(client);
+    modulesClients.put(userId, client);
 
     GenericObjectPool<StatefulRedisModulesConnection<String, String>> pool =
         createConnectionPool(client, config);
-    connectionPool.set(pool);
+    connectionPools.put(userId, pool);
 
     if (config.isUseJson()) {
-      useJson = true;
-      logger.info("Enabling JSON mode for Redis");
+      useJsonByUser.put(userId, true);
+      logger.info("[userId={}] Enabling JSON mode for Redis", userId);
+    } else {
+      useJsonByUser.put(userId, false);
     }
 
-    connected = true;
-    logger.info("Successfully connected to Redis");
+    connectedByUser.put(userId, true);
+    logger.info("[userId={}] Successfully connected to Redis", userId);
   }
 
-  public synchronized void disconnect() {
-    connected = false;
+  public synchronized void disconnect(String userId) {
+    connectedByUser.put(userId, false);
 
-    if (connectionPool.get() != null) {
-      connectionPool.get().close();
-      connectionPool.set(null);
+    GenericObjectPool<StatefulRedisModulesConnection<String, String>> pool = connectionPools.remove(userId);
+    if (pool != null) {
+      pool.close();
     }
 
-    if (modulesClient.get() != null) {
-      modulesClient.get().shutdown();
-      modulesClient.set(null);
+    RedisModulesClient client = modulesClients.remove(userId);
+    if (client != null) {
+      client.shutdown();
     }
 
-    if (connectionFactory.get() != null) {
-      connectionFactory.get().destroy();
-      connectionFactory.set(null);
+    LettuceConnectionFactory factory = connectionFactories.remove(userId);
+    if (factory != null) {
+      factory.destroy();
     }
 
-    logger.info("Disconnected from Redis");
+    useJsonByUser.remove(userId);
+    reactiveFactories.remove(userId);
+
+    logger.info("[userId={}] Disconnected from Redis", userId);
   }
 
-  public boolean isNotConnected() {
-    return !connected || connectionFactory.get() == null;
+  public boolean isNotConnected(String userId) {
+    Boolean connected = connectedByUser.get(userId);
+    return connected == null || !connected || !connectionFactories.containsKey(userId);
   }
 
-  public boolean isUseJson() {
-    return useJson;
+  public boolean isUseJson(String userId) {
+    return Boolean.TRUE.equals(useJsonByUser.get(userId));
   }
 
-  public LettuceConnectionFactory getConnectionFactory() {
-    if (isNotConnected()) {
-      throw new IllegalStateException("Redis is not connected");
+  public LettuceConnectionFactory getConnectionFactory(String userId) {
+    if (isNotConnected(userId)) {
+      throw new IllegalStateException("Redis is not connected for userId=" + userId);
     }
-    return connectionFactory.get();
+    return connectionFactories.get(userId);
   }
 
-  public RedisModulesClient getModulesClient() {
-    if (isNotConnected()) {
-      throw new IllegalStateException("Redis is not connected");
+  public RedisModulesClient getModulesClient(String userId) {
+    if (isNotConnected(userId)) {
+      throw new IllegalStateException("Redis is not connected for userId=" + userId);
     }
-    return modulesClient.get();
+    return modulesClients.get(userId);
   }
 
-  public GenericObjectPool<StatefulRedisModulesConnection<String, String>> getConnectionPool() {
-    if (isNotConnected()) {
-      throw new IllegalStateException("Redis is not connected");
+  public GenericObjectPool<StatefulRedisModulesConnection<String, String>> getConnectionPool(String userId) {
+    if (isNotConnected(userId)) {
+      throw new IllegalStateException("Redis is not connected for userId=" + userId);
     }
-    return connectionPool.get();
+    return connectionPools.get(userId);
   }
 
-  public ReactiveRedisTemplate<String, String> reactiveRedisTemplate() {
+  public ReactiveRedisTemplate<String, String> reactiveRedisTemplate(String userId) {
     StringRedisSerializer serializer = new StringRedisSerializer();
 
     RedisSerializationContext<String, String> context = RedisSerializationContext
@@ -137,10 +144,10 @@ public class RedisConnectionManager {
         .hashValue(serializer)
         .build();
 
-    return new ReactiveRedisTemplate<>(getConnectionFactory(), context);
+    return new ReactiveRedisTemplate<>(getConnectionFactory(userId), context);
   }
 
-  public ReactiveRedisJsonTemplate<String, String> reactiveRedisJsonTemplate() {
+  public ReactiveRedisJsonTemplate<String, String> reactiveRedisJsonTemplate(String userId) {
     StringRedisSerializer serializer = new StringRedisSerializer();
     ObjectMapper mapper = new ObjectMapper();
 
@@ -152,7 +159,7 @@ public class RedisConnectionManager {
         .hashValue(serializer)
         .build();
 
-    return new ReactiveRedisJsonTemplate<>(getConnectionFactory(), context, mapper);
+    return new ReactiveRedisJsonTemplate<>(getConnectionFactory(userId), context, mapper);
   }
 
   private LettuceConnectionFactory createConnectionFactory(RedisConnectionConfig config) throws Exception {

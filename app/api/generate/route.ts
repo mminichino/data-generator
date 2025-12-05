@@ -7,10 +7,12 @@ export async function POST(request: NextRequest) {
         const target = searchParams.get('target');
         const body = await request.json();
         console.log(`Generate body: ${JSON.stringify(body)} target=${target}`)
+        const userId = request.headers.get('x-user-id') || '';
         const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/generate/${target || 'samples'}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(userId ? { 'X-User-Id': userId } : {}),
             },
             body: JSON.stringify(body),
         });

@@ -5,10 +5,14 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         console.log(`Connect body: ${JSON.stringify(body)}`)
-        const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/database/connect`, {
+        const userId = request.headers.get('x-user-id') || '';
+        const { searchParams } = new URL(request.url);
+        const target = searchParams.get('target');
+        const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/database/connect/${target}/connect`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(userId ? { 'X-User-Id': userId } : {}),
             },
             body: JSON.stringify(body),
         });

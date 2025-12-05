@@ -27,17 +27,19 @@ public class RedisController {
   }
 
   @PostMapping("/redis")
-  public ResponseEntity<GenerateResponse> generate(@RequestBody EntityCollection schema) {
+  public ResponseEntity<GenerateResponse> generate(
+      @RequestHeader(value = "X-User-Id") String userId,
+      @RequestBody EntityCollection schema) {
     try {
       logger.info("Generating Redis data for schema collection {} (tables: {}) nosql={}",
           schema.getName(), schema.getEntities() != null ? schema.getEntities().size() : 0, schema.isNosql());
 
-      ReactiveRedisTemplate<String, String> reactiveTemplate = redisConnectionManager.reactiveRedisTemplate();
-      ReactiveRedisJsonTemplate<String, String> reactiveJsonTemplate = redisConnectionManager.reactiveRedisJsonTemplate();
+      ReactiveRedisTemplate<String, String> reactiveTemplate = redisConnectionManager.reactiveRedisTemplate(userId);
+      ReactiveRedisJsonTemplate<String, String> reactiveJsonTemplate = redisConnectionManager.reactiveRedisJsonTemplate(userId);
       Redis driver = new Redis();
       driver.init(schema, 1);
       driver.connect(reactiveTemplate, reactiveJsonTemplate);
-      if (redisConnectionManager.isUseJson()) {
+      if (redisConnectionManager.isUseJson(userId)) {
         driver.setUseJson(true);
       }
       driver.generate();
