@@ -2,8 +2,7 @@ import {NextResponse} from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import redis from '@/app/lib/redis';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret-key';
+import { JWT_SECRET } from '@/app/config';
 
 export async function POST(request: Request) {
     try {

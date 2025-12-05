@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { BACKEND_HOST, BACKEND_PORT } from "@/app/config";
 
 export async function POST(request: NextRequest) {
     try {
@@ -6,7 +7,7 @@ export async function POST(request: NextRequest) {
         const target = searchParams.get('target');
         const body = await request.json();
         console.log(`Generate body: ${JSON.stringify(body)} target=${target}`)
-        const backendResponse = await fetch(`http://localhost:8084/api/generate/${target || 'samples'}`, {
+        const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/generate/${target || 'samples'}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import redis from '@/app/lib/redis';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret-key';
+import { JWT_SECRET } from '@/app/config';
 
 export async function GET(request: Request) {
     try {

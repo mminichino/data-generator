@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { BACKEND_HOST, BACKEND_PORT } from "@/app/config";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
-        const backendResponse = await fetch('http://localhost:8084/api/database/status');
+        const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/database/status`);
         if (!backendResponse.ok) {
             console.log(`Status responded with: ${backendResponse.status}`);
             return NextResponse.json(

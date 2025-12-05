@@ -1,9 +1,10 @@
 import Redis from 'ioredis';
 import bcrypt from 'bcryptjs';
+import { REDIS_HOST, REDIS_PORT } from "@/app/config";
 
 const redis = new Redis({
-    host: 'localhost',
-    port: 10000,
+    host: REDIS_HOST,
+    port: REDIS_PORT,
     retryStrategy: (times) => {
         return Math.min(times * 50, 2000);
     },
