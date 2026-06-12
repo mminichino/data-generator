@@ -3,6 +3,7 @@ export type ColumnType =
     | 'sequentialNumber'
     | 'boolean'
     | 'number'
+    | 'value'
     | 'uuid'
     | 'firstName'
     | 'lastName'
@@ -52,13 +53,17 @@ export interface WordOptions {
     value: string;
 }
 
+export interface ValueOptions {
+    value: number;
+}
+
 export interface ColumnDefinition {
     id: string;
     name: string;
     type: ColumnType;
     nullable: boolean;
     primaryKey?: boolean;
-    options?: NumberOptions | SetOptions | WordOptions;
+    options?: NumberOptions | SetOptions | WordOptions | ValueOptions;
 }
 
 export interface TableSchema {

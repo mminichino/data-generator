@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ColumnDefinition, NumberOptions, SetOptions, WordOptions } from '../types/schema';
+import { ColumnDefinition, NumberOptions, SetOptions, WordOptions, ValueOptions } from '../types/schema';
 
 interface ColumnEditorProps {
   column: ColumnDefinition;
@@ -29,7 +29,9 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
       updated.options = { members: [''] } as SetOptions;
     } else if (newType === 'word' && !updated.options) {
       updated.options = { value: '' } as WordOptions;
-    } else if (newType !== 'number' && newType !== 'set' && newType !== 'word') {
+    } else if (newType === 'value' && !updated.options) {
+      updated.options = { value: 0 } as ValueOptions;
+    } else if (newType !== 'number' && newType !== 'set' && newType !== 'word' && newType !== 'value') {
       updated.options = undefined;
     }
     
@@ -55,6 +57,13 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
     setEditedColumn({
       ...editedColumn,
       options: { value } as WordOptions
+    });
+  };
+
+  const updateValueOptions = (value: number) => {
+    setEditedColumn({
+      ...editedColumn,
+      options: { value } as ValueOptions
     });
   };
 
@@ -117,6 +126,7 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
                   <option value="text">Text</option>
                   <option value="word">Word</option>
                   <option value="number">Number</option>
+                  <option value="value">Value</option>
                   <option value="boolean">Boolean</option>
                   <option value="uuid">UUID</option>
                   <option value="firstName">First Name</option>
@@ -298,6 +308,21 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
                   placeholder="Enter fixed text value"
                   value={(editedColumn.options as WordOptions)?.value || ''}
                   onChange={(e) => updateWordOptions(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {editedColumn.type === 'value' && (
+            <div className="card mb-3 bg-light">
+              <div className="card-body">
+                <h6 className="card-subtitle mb-3">Fixed Value</h6>
+                <input
+                  type="number"
+                  className="form-control"
+                  placeholder="Enter fixed numeric value"
+                  value={(editedColumn.options as ValueOptions)?.value ?? 0}
+                  onChange={(e) => updateValueOptions(e.target.value === '' ? 0 : Number(e.target.value))}
                 />
               </div>
             </div>

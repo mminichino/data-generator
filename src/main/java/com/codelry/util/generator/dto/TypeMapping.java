@@ -48,7 +48,7 @@ public enum TypeMapping {
   @JsonCreator
   public static TypeMapping fromJsonProperty(String jsonValue) {
     return switch (jsonValue) {
-      case "sequentialNumber" -> LONG;
+      case "sequentialNumber", "value" -> LONG;
       case "boolean" -> BOOLEAN;
       case "number" -> INTEGER;
       case "dollarAmount" -> DOUBLE;
