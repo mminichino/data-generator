@@ -35,6 +35,12 @@ public class CouchbaseConnectionController {
       if (StringUtils.hasText(parameters.getDatabase())) {
         config.setBucket(parameters.getDatabase());
       }
+      if (StringUtils.hasText(parameters.getScope())) {
+        config.setScope(parameters.getScope());
+      }
+      if (StringUtils.hasText(parameters.getCollection())) {
+        config.setCollection(parameters.getCollection());
+      }
       couchbaseConnectionManager.connect(userId, config);
       return ResponseEntity.ok(Map.of(
           "status", "connected",

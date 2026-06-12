@@ -4,19 +4,24 @@ import com.codelry.util.generator.dto.Entity;
 import com.codelry.util.generator.generator.EntityLoad;
 import com.couchbase.client.core.error.CouchbaseException;
 import com.couchbase.client.java.Collection;
+import com.couchbase.client.java.ReactiveCollection;
+import reactor.core.publisher.Flux;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 
 public class Couchbase extends EntityLoad {
   private static final Logger logger = LoggerFactory.getLogger(Couchbase.class);
-  private Collection collection;
+  private ReactiveCollection collection;
   public final PriorityBlockingQueue<Throwable> errorQueue = new PriorityBlockingQueue<>();
 
   public void connect(Collection collection) {
-    this.collection = collection;
+    this.collection = collection.reactive();
   }
 
   @Override
@@ -24,14 +29,11 @@ public class Couchbase extends EntityLoad {
 
   @Override
   public void insertBatch(List<Entity> batch) {
-    for (Entity record : batch) {
-      try {
-        collection.upsert(record.getId(), record.asJson());
-      } catch (CouchbaseException e) {
-        logger.error("Failed to upsert document {}", record.getId(), e);
-        errorQueue.put(e);
-      }
-    }
+    Flux.fromIterable(batch)
+        .flatMap(record -> collection.upsert(record.getId(), record.asJson()))
+        .retryWhen(Retry.backoff(10, Duration.ofMillis(10)).filter(t -> t instanceof CouchbaseException))
+        .doOnError(errorQueue::put)
+        .blockLast();
   }
 
   @Override

@@ -15,6 +15,8 @@ export default function ConnectionPage() {
   const [password, setPassword] = useState<string>(connection?.password || '');
   const [database, setDatabase] = useState<string>(connection?.database || '0');
   const [schema, setSchema] = useState<string>(connection?.schema || '');
+  const [scope, setScope] = useState<string>(connection?.scope || '_default');
+  const [collection, setCollection] = useState<string>(connection?.collection || '_default');
   const [useSsl, setUseSsl] = useState<boolean>(connection?.ssl || false);
   const [useJson, setUseJson] = useState<boolean>(connection?.json || false);
   const [tlsSkipVerify, setTlsSkipVerify] = useState<boolean>(connection?.tlsSkipVerify || false);
@@ -41,6 +43,8 @@ export default function ConnectionPage() {
       setPort(connection?.port?.toString() || '8091');
       setUsername(connection?.username || 'Administrator');
       setDatabase(connection?.database || 'default');
+      setScope(connection?.scope || '_default');
+      setCollection(connection?.collection || '_default');
       setSchema('');
     }
   }, [type]);
@@ -76,6 +80,8 @@ export default function ConnectionPage() {
         password,
         database,
         schema,
+        scope,
+        collection,
         useSsl,
         useJson,
         tlsSkipVerify,
@@ -226,8 +232,37 @@ export default function ConnectionPage() {
                     />
                   </div>
                 </div>
-                <div className="col-md-4">
-                  {type !== 'couchbase' && (
+                {type === 'couchbase' ? (
+                  <>
+                    <div className="col-md-4">
+                      <div className="form-group mb-3">
+                        <label className="form-label">Scope</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="_default"
+                          value={scope}
+                          onChange={(e) => setScope(e.target.value)}
+                          disabled={connected || loading}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mb-3">
+                        <label className="form-label">Collection</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="_default"
+                          value={collection}
+                          onChange={(e) => setCollection(e.target.value)}
+                          disabled={connected || loading}
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="col-md-4">
                     <div className="form-group mb-3">
                       <label className="form-label">Schema</label>
                       <input
@@ -239,8 +274,8 @@ export default function ConnectionPage() {
                         disabled={connected || loading}
                       />
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 <div className="col-md-4 d-flex align-items-end">
                   <div className="form-group mb-3 form-check">
                     <input

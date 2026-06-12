@@ -28,6 +28,8 @@ public class CouchbaseConnectService extends CouchbaseConnectGrpc.CouchbaseConne
       config.setUseTls(request.getTls());
       config.setTlsSkipVerify(request.getTlsSkipVerify());
       config.setBucket(request.getBucket());
+      config.setScope(request.getScope());
+      config.setCollection(request.getCollection());
       couchbaseConnectionManager.connect(request.getUserId(), config);
       logger.info("Successfully connected to Couchbase");
       responseObserver.onNext(CouchbaseConnectResponse.newBuilder().setSuccess(true).build());

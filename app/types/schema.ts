@@ -8,6 +8,7 @@ export type ColumnType =
     | 'lastName'
     | 'fullName'
     | 'set'
+    | 'word'
     | 'zipcode'
     | 'dollarAmount'
     | 'streetNumber'
@@ -24,11 +25,16 @@ export type ColumnType =
     | 'manufacturer'
     | 'timestamp'
     | 'date'
-    | 'airportCode'
-    | 'airportName'
-    | 'airportCity'
+    | 'airportOrigCode'
+    | 'airportOrigName'
+    | 'airportOrigCity'
+    | 'airportDestCode'
+    | 'airportDestName'
+    | 'airportDestCity'
     | 'airlineCode'
     | 'airlineName'
+    | 'bookingCode'
+    | 'cabinCode'
     | 'ipAddress'
     | 'macAddress';
 
@@ -42,13 +48,17 @@ export interface SetOptions {
     members: string[];
 }
 
+export interface WordOptions {
+    value: string;
+}
+
 export interface ColumnDefinition {
     id: string;
     name: string;
     type: ColumnType;
     nullable: boolean;
     primaryKey?: boolean;
-    options?: NumberOptions | SetOptions;
+    options?: NumberOptions | SetOptions | WordOptions;
 }
 
 export interface TableSchema {
@@ -72,6 +82,8 @@ export interface DatabaseConnection {
     port: number;
     database: string;
     schema: string;
+    scope?: string;
+    collection?: string;
     username: string;
     password: string;
     ssl?: boolean;
@@ -83,4 +95,24 @@ export interface GenerateDataRequest {
     schema: SchemaCollection;
     rowCount: number;
     connection?: DatabaseConnection;
+}
+
+export type GenerationStatus = 'RUNNING' | 'COMPLETED' | 'CANCELLED' | 'FAILED';
+
+export interface GenerationJobStatus {
+    jobId: string;
+    status: GenerationStatus;
+    totalRecords: number;
+    completedRecords: number;
+    percentComplete: number;
+    recordsPerSecond: number;
+    message?: string;
+    startedAt: number;
+    updatedAt: number;
+}
+
+export interface StartGenerationResponse {
+    jobId: string;
+    status: GenerationStatus;
+    totalRecords: number;
 }

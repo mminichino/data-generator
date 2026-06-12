@@ -5,6 +5,8 @@ public class CouchbaseConnectionConfig {
   private String username = "";
   private String password = "";
   private String bucket = "default";
+  private String scope = "_default";
+  private String collection = "_default";
   private boolean useTls = false;
   private boolean tlsSkipVerify = false;
 
@@ -19,6 +21,12 @@ public class CouchbaseConnectionConfig {
 
   public String getBucket() { return bucket; }
   public void setBucket(String bucket) { this.bucket = bucket; }
+
+  public String getScope() { return scope; }
+  public void setScope(String scope) { this.scope = scope; }
+
+  public String getCollection() { return collection; }
+  public void setCollection(String collection) { this.collection = collection; }
 
   public boolean isUseTls() { return useTls; }
   public void setUseTls(boolean useTls) { this.useTls = useTls; }

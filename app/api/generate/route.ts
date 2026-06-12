@@ -1,37 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND_HOST, BACKEND_PORT } from "@/app/config";
+import { BACKEND_HOST, BACKEND_PORT } from '@/app/config';
+
+function backendHeaders(userId: string): HeadersInit {
+  return {
+    'Content-Type': 'application/json',
+    ...(userId ? { 'X-User-Id': userId } : {}),
+  };
+}
 
 export async function POST(request: NextRequest) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const target = searchParams.get('target');
-        const body = await request.json();
-        console.log(`Generate body: ${JSON.stringify(body)} target=${target}`)
-        const userId = request.headers.get('x-user-id') || '';
-        const backendResponse = await fetch(`http://${BACKEND_HOST}:${BACKEND_PORT}/api/generate/${target || 'samples'}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(userId ? { 'X-User-Id': userId } : {}),
-            },
-            body: JSON.stringify(body),
-        });
+  try {
+    const { searchParams } = new URL(request.url);
+    const target = searchParams.get('target') || 'samples';
+    const body = await request.json();
+    const userId = request.headers.get('x-user-id') || '';
 
-        if (!backendResponse.ok) {
-            console.log(`Connect responded with: ${backendResponse.status}`);
-            return NextResponse.json(
-                { response: backendResponse.json() },
-                { status: backendResponse.status }
-            );
-        }
+    const backendResponse = await fetch(
+      `http://${BACKEND_HOST}:${BACKEND_PORT}/api/generate/${target}`,
+      {
+        method: 'POST',
+        headers: backendHeaders(userId),
+        body: JSON.stringify(body),
+      }
+    );
 
-        const result = await backendResponse.json();
-        return NextResponse.json(result);
-    } catch (error) {
-        console.error('Error calling connect endpoint:', error);
-        return NextResponse.json(
-            { error: 'Failed to call connect API' },
-            { status: 500 }
-        );
-    }
+    const result = await backendResponse.json().catch(() => ({}));
+    return NextResponse.json(result, { status: backendResponse.status });
+  } catch (error) {
+    console.error('Error calling generate endpoint:', error);
+    return NextResponse.json({ error: 'Failed to call generate API' }, { status: 500 });
+  }
 }

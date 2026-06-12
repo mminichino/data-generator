@@ -20,6 +20,8 @@ message CouchbaseConnectRequest {
   bool tls = 5;
   bool tlsSkipVerify = 6;
   string bucket = 7;
+  string scope = 8;
+  string collection = 9;
 }
 
 message CouchbaseDisconnectRequest {

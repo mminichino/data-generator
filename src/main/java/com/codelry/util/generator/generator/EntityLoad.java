@@ -48,6 +48,12 @@ public abstract class EntityLoad {
   public abstract void insertBatch(List<Entity> batch);
 
   public void generate() {
+    generate(null);
+  }
+
+  public void generate(GenerationListener listener) {
+    long totalRecords = computeTotalRecords();
+    long completedRecords = 0;
     for (EntityDefinition definition : schema.getEntities()) {
       recordCount = dynamicCount ? definition.getCount() : recordCount;
       LOGGER.info("Generate start {} count {} for schema {}", recordStart, recordCount, schema.getName());
@@ -56,13 +62,31 @@ public abstract class EntityLoad {
       factory.setIndex(0);
       factory.start();
       for (int i = 0; i < recordCount; i += batchSize) {
+        if (listener != null && listener.isCancelled()) {
+          factory.stop();
+          throw new GenerationCancelledException();
+        }
         long end = Math.min(i + batchSize, recordCount);
         int chunk = (int) (end - i);
         LOGGER.debug("Inserting batch {} of {} records", i + 1, chunk);
         insertBatch(factory.collect(chunk));
+        completedRecords += chunk;
+        if (listener != null) {
+          listener.onProgress(completedRecords, totalRecords);
+        }
       }
       factory.stop();
     }
+  }
+
+  public long computeTotalRecords() {
+    if (schema.getEntities() == null || schema.getEntities().isEmpty()) {
+      return 0;
+    }
+    if (dynamicCount) {
+      return schema.getEntities().stream().mapToLong(EntityDefinition::getCount).sum();
+    }
+    return recordCount * schema.getEntities().size();
   }
 
   public abstract void cleanup();

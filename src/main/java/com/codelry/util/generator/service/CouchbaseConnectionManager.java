@@ -22,14 +22,17 @@ public class CouchbaseConnectionManager {
 
   private final Map<String, Cluster> clusters = new ConcurrentHashMap<>();
   private final Map<String, ClusterEnvironment> environments = new ConcurrentHashMap<>();
-  private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+  private final Map<String, Collection> collections = new ConcurrentHashMap<>();
   private final Map<String, Boolean> connectedByUser = new ConcurrentHashMap<>();
+
+  private static final String DEFAULT_SCOPE = "_default";
+  private static final String DEFAULT_COLLECTION = "_default";
 
   public synchronized void connect(String userId, CouchbaseConnectionConfig config) throws Exception {
     disconnect(userId);
 
-    logger.info("[userId={}] Connecting to Couchbase: {} bucket={} tls={}",
-        userId, config.getHost(), config.getBucket(), config.isUseTls());
+    logger.info("[userId={}] Connecting to Couchbase: {} bucket={} scope={} collection={} tls={}",
+        userId, config.getHost(), config.getBucket(), config.getScope(), config.getCollection(), config.isUseTls());
 
     String connectionString = buildConnectionString(config);
     ClusterEnvironment environment = createEnvironment(config);
@@ -39,15 +42,19 @@ public class CouchbaseConnectionManager {
             .environment(environment));
 
     String bucketName = StringUtils.hasText(config.getBucket()) ? config.getBucket() : "default";
+    String scopeName = StringUtils.hasText(config.getScope()) ? config.getScope() : DEFAULT_SCOPE;
+    String collectionName = StringUtils.hasText(config.getCollection()) ? config.getCollection() : DEFAULT_COLLECTION;
     Bucket bucket = cluster.bucket(bucketName);
     bucket.waitUntilReady(java.time.Duration.ofSeconds(30));
+    Collection collection = bucket.scope(scopeName).collection(collectionName);
 
     clusters.put(userId, cluster);
     environments.put(userId, environment);
-    buckets.put(userId, bucket);
+    collections.put(userId, collection);
     connectedByUser.put(userId, true);
 
-    logger.info("[userId={}] Successfully connected to Couchbase bucket {}", userId, bucketName);
+    logger.info("[userId={}] Successfully connected to Couchbase {}.{}.{}",
+        userId, bucketName, scopeName, collectionName);
   }
 
   public synchronized void disconnect(String userId) {
@@ -63,7 +70,7 @@ public class CouchbaseConnectionManager {
       environment.shutdown();
     }
 
-    buckets.remove(userId);
+    collections.remove(userId);
 
     logger.info("[userId={}] Disconnected from Couchbase", userId);
   }
@@ -77,7 +84,7 @@ public class CouchbaseConnectionManager {
     if (isNotConnected(userId)) {
       throw new IllegalStateException("Couchbase is not connected for userId=" + userId);
     }
-    return buckets.get(userId).defaultCollection();
+    return collections.get(userId);
   }
 
   private String buildConnectionString(CouchbaseConnectionConfig config) {

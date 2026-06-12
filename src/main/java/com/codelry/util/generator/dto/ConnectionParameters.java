@@ -10,6 +10,8 @@ public class ConnectionParameters {
   private String password = "";
   private String database = "";
   private String schema = "";
+  private String scope = "_default";
+  private String collection = "_default";
   private boolean useSsl = false;
   private boolean useJson = false;
   private boolean tlsSkipVerify = false;
@@ -70,6 +72,22 @@ public class ConnectionParameters {
 
   public void setSchema(String schema) {
     this.schema = schema;
+  }
+
+  public String getScope() {
+    return scope;
+  }
+
+  public void setScope(String scope) {
+    this.scope = scope;
+  }
+
+  public String getCollection() {
+    return collection;
+  }
+
+  public void setCollection(String collection) {
+    this.collection = collection;
   }
 
   public boolean isUseSsl() {
