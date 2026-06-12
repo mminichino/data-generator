@@ -76,6 +76,9 @@ public class FieldGenerator {
         double value = randomizer.randomNumber(digits, false);
         field.setValue((long) value);
         break;
+      case VALUE:
+        field.setValue(ColumnOptions.getNumericValue(definition.getOptions()));
+        break;
       case DOLLAR_AMOUNT:
         double amount = randomizer.randomDollarAmount(4);
         field.setValue(amount);

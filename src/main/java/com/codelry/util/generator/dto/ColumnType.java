@@ -9,6 +9,7 @@ public enum ColumnType {
   SEQUENTIAL_NUMBER("sequentialNumber"),
   TEXT("text"),
   NUMBER("number"),
+  VALUE("value"),
   BOOLEAN("boolean"),
   UUID("uuid"),
   FIRST_NAME("firstName"),

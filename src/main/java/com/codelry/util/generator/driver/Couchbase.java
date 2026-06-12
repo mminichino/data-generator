@@ -30,7 +30,7 @@ public class Couchbase extends EntityLoad {
   @Override
   public void insertBatch(List<Entity> batch) {
     Flux.fromIterable(batch)
-        .flatMap(record -> collection.upsert(record.getId(), record.asJson()))
+        .flatMap(record -> collection.upsert(record.getId(), record.asJson()), 256)
         .retryWhen(Retry.backoff(10, Duration.ofMillis(10)).filter(t -> t instanceof CouchbaseException))
         .doOnError(errorQueue::put)
         .blockLast();

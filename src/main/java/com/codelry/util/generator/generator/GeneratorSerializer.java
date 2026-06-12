@@ -92,6 +92,14 @@ public class GeneratorSerializer extends JsonSerializer<Table> {
           value = randomizer.randomNumber(digits, isDecimal);
           gen.writeNumber(isDecimal ? value : (long) value);
           break;
+        case VALUE:
+          Number fixedValue = ColumnOptions.getNumericValue(column.getOptions());
+          if (fixedValue instanceof Double || fixedValue instanceof Float) {
+            gen.writeNumber(fixedValue.doubleValue());
+          } else {
+            gen.writeNumber(fixedValue.longValue());
+          }
+          break;
         case DOLLAR_AMOUNT:
           digits = column.options.containsKey("digits") ? Integer.parseInt(column.options.get("digits").toString()) : 4;
           value = randomizer.randomDollarAmount(digits);

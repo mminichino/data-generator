@@ -10,7 +10,7 @@ import java.util.List;
 
 public abstract class EntityLoad {
   private static final Logger LOGGER = LogManager.getLogger(EntityLoad.class);
-  private static int batchSize = 100;
+  private static int batchSize = 5000;
   private long recordCount = 1;
   private long recordStart = 1;
   private boolean dynamicCount = false;
