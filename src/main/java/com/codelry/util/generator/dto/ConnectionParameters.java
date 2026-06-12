@@ -1,5 +1,7 @@
 package com.codelry.util.generator.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class ConnectionParameters {
   private String type = "redis";
   private String hostname = "localhost";
@@ -8,8 +10,11 @@ public class ConnectionParameters {
   private String password = "";
   private String database = "";
   private String schema = "";
+  private String scope = "_default";
+  private String collection = "_default";
   private boolean useSsl = false;
   private boolean useJson = false;
+  private boolean tlsSkipVerify = false;
 
   public String getType() {
     return type;
@@ -19,10 +24,12 @@ public class ConnectionParameters {
     this.type = type;
   }
 
+  @JsonProperty("hostname")
   public String getHost() {
     return hostname;
   }
 
+  @JsonProperty("hostname")
   public void setHost(String host) {
     this.hostname = host;
   }
@@ -67,6 +74,22 @@ public class ConnectionParameters {
     this.schema = schema;
   }
 
+  public String getScope() {
+    return scope;
+  }
+
+  public void setScope(String scope) {
+    this.scope = scope;
+  }
+
+  public String getCollection() {
+    return collection;
+  }
+
+  public void setCollection(String collection) {
+    this.collection = collection;
+  }
+
   public boolean isUseSsl() {
     return useSsl;
   }
@@ -81,5 +104,13 @@ public class ConnectionParameters {
 
   public void setUseJson(boolean useJson) {
     this.useJson = useJson;
+  }
+
+  public boolean isTlsSkipVerify() {
+    return tlsSkipVerify;
+  }
+
+  public void setTlsSkipVerify(boolean tlsSkipVerify) {
+    this.tlsSkipVerify = tlsSkipVerify;
   }
 }

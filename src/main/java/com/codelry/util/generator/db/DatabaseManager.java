@@ -15,6 +15,8 @@ public class DatabaseManager {
   public static long nameCount;
   public static long addressCount;
   public static long productCount;
+  public static long airportCount;
+  public static long airlineCount;
   public static List<NameRecord> nameList = new ArrayList<>();
   public static List<AddressRecord> addressList = new ArrayList<>();
   public static List<ProductRecord> productList = new ArrayList<>();
@@ -24,6 +26,8 @@ public class DatabaseManager {
   public static Map<String, Integer> nameLengthMap = new HashMap<>();
   public static Map<String, Integer> addressLengthMap = new HashMap<>();
   public static Map<String, Integer> productLengthMap = new HashMap<>();
+  public static List<AirportRecord> airportList = new ArrayList<>();
+  public static List<AirlineRecord> airlineList = new ArrayList<>();
 
   private DatabaseManager() {}
 
@@ -50,9 +54,13 @@ public class DatabaseManager {
       buildNameLengthMap(conn);
       buildAddressLengthMap(conn);
       buildProductLengthMap(conn);
+      buildAirportList(conn);
+      buildAirlineList(conn);
       nameCount = getNameCount();
       addressCount = getAddressCount();
       productCount = getProductCount();
+      airportCount = getAirportCount();
+      airlineCount = getAirlineCount();
       conn.close();
       LOGGER.debug("Database initialized");
     } catch (SQLException e) {
@@ -70,6 +78,14 @@ public class DatabaseManager {
 
   public long getProductCount() {
     return productList.size();
+  }
+
+  public long getAirportCount() {
+    return airportList.size();
+  }
+
+  public long getAirlineCount() {
+    return airlineList.size();
   }
 
   public void buildNameList(Connection conn) {
@@ -261,6 +277,37 @@ public class DatabaseManager {
     }
   }
 
+  public void buildAirportList(Connection conn) {
+    String sql = "SELECT code, city, name FROM airports";
+    try {
+      Statement stmt = conn.createStatement();
+      ResultSet rs = stmt.executeQuery(sql);
+      while (rs.next()) {
+        String code = rs.getString("code");
+        String city = rs.getString("city");
+        String name = rs.getString("name");
+        airportList.add(new AirportRecord(code, city, name));
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void buildAirlineList(Connection conn) {
+    String sql = "SELECT code, name FROM airlines";
+    try {
+      Statement stmt = conn.createStatement();
+      ResultSet rs = stmt.executeQuery(sql);
+      while (rs.next()) {
+        String code = rs.getString("code");
+        String name = rs.getString("name");
+        airlineList.add(new AirlineRecord(code, name));
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public String getState(double weight) {
     return stateMap.entrySet().stream()
         .filter(entry -> entry.getValue() >= weight)
@@ -303,5 +350,13 @@ public class DatabaseManager {
 
   public int getProductFieldLength(String field) {
     return productLengthMap.getOrDefault(field, 256);
+  }
+
+  public AirportRecord getAirportById(int id) {
+    return airportList.get(id - 1);
+  }
+
+  public AirlineRecord getAirlineById(int id) {
+    return airlineList.get(id - 1);
   }
 }

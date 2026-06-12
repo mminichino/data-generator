@@ -63,6 +63,15 @@ public class CreateDatabase {
                                                "seasonal INTEGER," +
                                                "price REAL, " +
                                                "cost REAL)";
+  private static final String AIRPORT_TABLE = "CREATE TABLE IF NOT EXISTS airports " +
+                                              "(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                              "code TEXT," +
+                                              "city TEXT," +
+                                              "name TEXT)";
+  private static final String AIRLINE_TABLE = "CREATE TABLE IF NOT EXISTS airlines " +
+                                               "(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                               "code TEXT," +
+                                               "name TEXT)";
 
   public CreateDatabase() {}
 
@@ -77,6 +86,8 @@ public class CreateDatabase {
     Option zipOpt = new Option("z", "zip", true, "Zip Codes");
     Option stateOpt = new Option("s", "state", true, "State Data");
     Option productOpt = new Option("P", "products", false, "Products");
+    Option airportOpt = new Option("A", "airports", false, "Airports");
+    Option airlineOpt = new Option("L", "airlines", false, "Airlines");
 
     nameOpt.setRequired(false);
     addressOpt.setRequired(false);
@@ -84,6 +95,8 @@ public class CreateDatabase {
     zipOpt.setRequired(false);
     stateOpt.setRequired(false);
     productOpt.setRequired(false);
+    airportOpt.setRequired(false);
+    airlineOpt.setRequired(false);
 
     options.addOption(nameOpt);
     options.addOption(addressOpt);
@@ -91,6 +104,8 @@ public class CreateDatabase {
     options.addOption(zipOpt);
     options.addOption(stateOpt);
     options.addOption(productOpt);
+    options.addOption(airportOpt);
+    options.addOption(airlineOpt);
 
     CommandLineParser parser = new DefaultParser();
     HelpFormatter formatter = new HelpFormatter();
@@ -112,6 +127,8 @@ public class CreateDatabase {
       stmt.execute(ZIP_CODE_TABLE);
       stmt.execute(STATE_TABLE);
       stmt.execute(PRODUCTS_TABLE);
+      stmt.execute(AIRPORT_TABLE);
+      stmt.execute(AIRLINE_TABLE);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -128,7 +145,12 @@ public class CreateDatabase {
       populateStateTable(cmd.getOptionValue("state"));
     } else if (cmd.hasOption("products")) {
       populateProductsTable(1);
+    } else if (cmd.hasOption("airports")) {
+      populateAirportsTable();
+    } else if (cmd.hasOption("airlines")) {
+      populateAirlinesTable();
     }
+
   }
 
   private static void configureLogging() {
@@ -330,6 +352,55 @@ public class CreateDatabase {
       } catch (SQLException e) {
         throw new RuntimeException(e);
       }
+    }
+  }
+
+  public static void populateAirportsTable() {
+    LOGGER.info("Inserting airport data into the database");
+
+    GenerateIdentityData gen = new GenerateIdentityData();
+    List<JsonNode> airports = gen.generateAirports();
+
+    LOGGER.info("Airports generated: {}", airports.size());
+    try (Connection conn = DriverManager.getConnection(url)) {
+      try (Statement stmt = conn.createStatement()) {
+        stmt.executeUpdate("DELETE FROM airports");
+        stmt.executeUpdate("DELETE FROM sqlite_sequence WHERE name = 'airports'");
+      }
+      for (JsonNode airport : airports) {
+        String sql = "INSERT INTO airports(code, city, name) VALUES(?, ?, ?)";
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setString(1, airport.get("iata").asText());
+        stmt.setString(2, airport.get("city").asText());
+        stmt.setString(3, airport.get("name").asText());
+        stmt.executeUpdate();
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static void populateAirlinesTable() {
+    LOGGER.info("Inserting airline data into the database");
+
+    GenerateIdentityData gen = new GenerateIdentityData();
+    List<JsonNode> airlines = gen.generateAirlines();
+
+    LOGGER.info("Airlines generated: {}", airlines.size());
+    try (Connection conn = DriverManager.getConnection(url)) {
+      try (Statement stmt = conn.createStatement()) {
+        stmt.executeUpdate("DELETE FROM airlines");
+        stmt.executeUpdate("DELETE FROM sqlite_sequence WHERE name = 'airlines'");
+      }
+      for (JsonNode airline : airlines) {
+        String sql = "INSERT INTO airlines(code, name) VALUES(?, ?)";
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setString(1, airline.get("iata").asText());
+        stmt.setString(2, airline.get("name").asText());
+        stmt.executeUpdate();
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
     }
   }
 }

@@ -18,6 +18,8 @@ public class Randomizer {
   };
   private static final String[] terminator = {".", "?", "!"};
   private static final String[] punctuation = {";", ":", ","};
+  private static final String[] bookingCodes = {"Y", "B", "M", "H", "Q", "V", "G"};
+  private static final String[] cabinCodes = {"F", "J", "W", "Y"};
 
   public Randomizer() {
     databaseManager = DatabaseManager.getInstance();
@@ -161,6 +163,16 @@ public class Randomizer {
     return databaseManager.getProductById(productIndex);
   }
 
+  public AirportRecord randomAirportRecord() {
+    int airportIndex = randomNumber(1, (int) DatabaseManager.airportCount);
+    return databaseManager.getAirportById(airportIndex);
+  }
+
+  public AirlineRecord randomAirlineRecord() {
+    int airlineIndex = randomNumber(1, (int) DatabaseManager.airlineCount);
+    return databaseManager.getAirlineById(airlineIndex);
+  }
+
   public String randomPhoneNumber(String state) {
     List<String> areaCodes = databaseManager.getAreaCodesByState(state);
     int number = randomNumber(1, 9999);
@@ -170,6 +182,14 @@ public class Randomizer {
 
   public boolean randomBoolean() {
     return rand.nextBoolean();
+  }
+
+  public String randomBookingCode() {
+    return bookingCodes[randomArrayIndex(bookingCodes.length)];
+  }
+
+  public String randomCabinCode() {
+    return cabinCodes[randomArrayIndex(cabinCodes.length)];
   }
 
   public String makeAlphaString(int minValue, int maxValue) {

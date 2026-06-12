@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 
 public abstract class DataLoad {
   private static final Logger LOGGER = LogManager.getLogger(DataLoad.class);
-  private static int batchSize = 100;
+  private static int batchSize = 1000;
   private static long recordCount = 1;
   private static long recordStart = 1;
   public SchemaCollection schema;

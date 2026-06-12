@@ -1,10 +1,9 @@
 package com.codelry.util.generator.generator;
 
-import com.codelry.util.generator.db.AddressRecord;
-import com.codelry.util.generator.db.NameRecord;
-import com.codelry.util.generator.db.ProductRecord;
+import com.codelry.util.generator.db.*;
 import com.codelry.util.generator.dto.*;
 import com.codelry.util.generator.randomizer.Randomizer;
+import com.codelry.util.generator.util.ColumnOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,11 +13,17 @@ public class FieldGenerator {
   private NameRecord name;
   private AddressRecord address;
   private ProductRecord product;
+  private AirportRecord airportOrig;
+  private AirportRecord airportDest;
+  private AirlineRecord airline;
 
   public void init() {
     this.name = randomizer.randomNameRecord();
     this.address = randomizer.randomAddressRecord();
     this.product = randomizer.randomProductRecord();
+    this.airportOrig = randomizer.randomAirportRecord();
+    this.airportDest = randomizer.randomAirportRecord();
+    this.airline = randomizer.randomAirlineRecord();
   }
 
   public Field generate(FieldDefinition definition, long index) {
@@ -97,8 +102,10 @@ public class FieldGenerator {
         field.setValue(randomizer.randomIpAddress());
         break;
       case SET:
-        String[] list = definition.options.containsKey("members") ? (String[]) definition.options.get("members") : new String[]{"one", "two", "three"};
-        field.setValue(list);
+        field.setValue(ColumnOptions.getSetMembers(definition.getOptions()));
+        break;
+      case WORD:
+        field.setValue(ColumnOptions.getWordValue(definition.getOptions()));
         break;
       case PRODUCT_NAME:
         field.setValue(product.name);
@@ -108,6 +115,36 @@ public class FieldGenerator {
         break;
       case PRODUCT_TYPE:
         field.setValue(product.category);
+        break;
+      case AIRLINE_CODE:
+        field.setValue(airline.code);
+        break;
+      case AIRPORT_ORIG_CODE:
+        field.setValue(airportOrig.code);
+        break;
+      case AIRPORT_ORIG_NAME:
+        field.setValue(airportOrig.name);
+        break;
+      case AIRPORT_ORIG_CITY:
+        field.setValue(airportOrig.city);
+        break;
+      case AIRPORT_DEST_CODE:
+        field.setValue(airportDest.code);
+        break;
+      case AIRPORT_DEST_NAME:
+        field.setValue(airportDest.name);
+        break;
+      case AIRPORT_DEST_CITY:
+        field.setValue(airportDest.city);
+        break;
+      case AIRLINE_NAME:
+        field.setValue(airline.name);
+        break;
+      case BOOKING_CODE:
+        field.setValue(randomizer.randomBookingCode());
+        break;
+      case CABIN_CODE:
+        field.setValue(randomizer.randomCabinCode());
         break;
       default:
         LOGGER.warn("Unknown column type: {}", definition.getType());

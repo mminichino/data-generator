@@ -18,4 +18,12 @@ public class JsonUtils {
             .constructCollectionType(List.class, JsonNode.class)
     );
   }
+
+  public static List<String> parseJsonStringArray(String jsonArray) throws JsonProcessingException {
+    return MAPPER.readValue(
+        jsonArray,
+        TypeFactory.defaultInstance()
+            .constructCollectionType(List.class, String.class)
+    );
+  }
 }

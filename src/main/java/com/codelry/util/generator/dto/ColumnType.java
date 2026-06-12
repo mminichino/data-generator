@@ -31,6 +31,17 @@ public enum ColumnType {
   IP_ADDRESS("ipAddress"),
   MAC_ADDRESS("macAddress"),
   SET("set"),
+  WORD("word"),
+  AIRLINE_CODE("airlineCode"),
+  AIRLINE_NAME("airlineName"),
+  AIRPORT_ORIG_CODE("airportOrigCode"),
+  AIRPORT_ORIG_NAME("airportOrigName"),
+  AIRPORT_ORIG_CITY("airportOrigCity"),
+  AIRPORT_DEST_CODE("airportDestCode"),
+  AIRPORT_DEST_NAME("airportDestName"),
+  AIRPORT_DEST_CITY("airportDestCity"),
+  BOOKING_CODE("bookingCode"),
+  CABIN_CODE("cabinCode"),
   UNKNOWN("unknown");
 
   private final String text;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ColumnDefinition, NumberOptions, SetOptions } from '../types/schema';
+import { ColumnDefinition, NumberOptions, SetOptions, WordOptions } from '../types/schema';
 
 interface ColumnEditorProps {
   column: ColumnDefinition;
@@ -27,7 +27,9 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
       updated.options = { isDecimal: false, digits: 5 } as NumberOptions;
     } else if (newType === 'set' && !updated.options) {
       updated.options = { members: [''] } as SetOptions;
-    } else if (newType !== 'number' && newType !== 'set') {
+    } else if (newType === 'word' && !updated.options) {
+      updated.options = { value: '' } as WordOptions;
+    } else if (newType !== 'number' && newType !== 'set' && newType !== 'word') {
       updated.options = undefined;
     }
     
@@ -46,6 +48,13 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
     setEditedColumn({
       ...editedColumn,
       options: { members } as SetOptions
+    });
+  };
+
+  const updateWordOptions = (value: string) => {
+    setEditedColumn({
+      ...editedColumn,
+      options: { value } as WordOptions
     });
   };
 
@@ -106,6 +115,7 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
                 >
                   <option value="sequentialNumber">Sequential Number</option>
                   <option value="text">Text</option>
+                  <option value="word">Word</option>
                   <option value="number">Number</option>
                   <option value="boolean">Boolean</option>
                   <option value="uuid">UUID</option>
@@ -125,6 +135,16 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
                   <option value="productType">Product Type</option>
                   <option value="manufacturer">Manufacturer</option>
                   <option value="date">Date</option>
+                  <option value="airportOrigCode">Airport Origin Code</option>
+                  <option value="airportOrigName">Airport Origin Name</option>
+                  <option value="airportOrigCity">Airport Origin City</option>
+                  <option value="airportDestCode">Airport Destination Code</option>
+                  <option value="airportDestName">Airport Destination Name</option>
+                  <option value="airportDestCity">Airport Destination City</option>
+                  <option value="airlineCode">Airline Code</option>
+                  <option value="airlineName">Airline Name</option>
+                  <option value="bookingCode">Booking Code</option>
+                  <option value="cabinCode">Cabin Code</option>
                   <option value="timestamp">Timestamp</option>
                   <option value="ipAddress">IP Address</option>
                   <option value="macAddress">MAC Address</option>
@@ -264,6 +284,21 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
                 >
                   + Add Member
                 </button>
+              </div>
+            </div>
+          )}
+
+          {editedColumn.type === 'word' && (
+            <div className="card mb-3 bg-light">
+              <div className="card-body">
+                <h6 className="card-subtitle mb-3">Word Value</h6>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter fixed text value"
+                  value={(editedColumn.options as WordOptions)?.value || ''}
+                  onChange={(e) => updateWordOptions(e.target.value)}
+                />
               </div>
             </div>
           )}

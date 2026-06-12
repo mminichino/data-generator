@@ -36,6 +36,12 @@ public class EntitySerializer extends JsonSerializer<Entity> {
           gen.writeString(String.valueOf(member));
         }
         gen.writeEndArray();
+      } else if (field.value instanceof String[] array) {
+        gen.writeStartArray();
+        for (String member : array) {
+          gen.writeString(member);
+        }
+        gen.writeEndArray();
       } else if (field.value instanceof Date) {
         SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         gen.writeString(timeFormat.format((Date) field.value));

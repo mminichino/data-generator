@@ -94,7 +94,7 @@ public class FieldDefinition {
       case ACCOUNT_NUMBER:
         setLength(12);
         break;
-      case TEXT, SET:
+      case TEXT, SET, WORD:
         setLength(255);
         break;
       case MAC_ADDRESS:

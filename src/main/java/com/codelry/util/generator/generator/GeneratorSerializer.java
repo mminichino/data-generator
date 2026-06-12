@@ -1,11 +1,10 @@
 package com.codelry.util.generator.generator;
 
-import com.codelry.util.generator.db.AddressRecord;
-import com.codelry.util.generator.db.NameRecord;
-import com.codelry.util.generator.db.ProductRecord;
+import com.codelry.util.generator.db.*;
 import com.codelry.util.generator.dto.Column;
 import com.codelry.util.generator.dto.Table;
 import com.codelry.util.generator.randomizer.Randomizer;
+import com.codelry.util.generator.util.ColumnOptions;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -27,13 +26,14 @@ public class GeneratorSerializer extends JsonSerializer<Table> {
     NameRecord name = null;
     AddressRecord address = null;
     ProductRecord product = null;
+    AirportRecord airportOrig = null;
+    AirportRecord airportDest = null;
+    AirlineRecord airline = null;
     int digits;
     boolean isDecimal;
     double value;
     int number;
     byte[] bytes;
-    String[] list;
-
     gen.writeStartObject();
     for (Column column : table.getColumns()) {
       gen.writeFieldName(column.name);
@@ -119,12 +119,14 @@ public class GeneratorSerializer extends JsonSerializer<Table> {
           gen.writeString(randomizer.randomIpAddress());
           break;
         case SET:
-          list = column.options.containsKey("members") ? (String[]) column.options.get("members") : new String[]{"one", "two", "three"};
           gen.writeStartArray();
-          for (String member : list) {
+          for (String member : ColumnOptions.getSetMembers(column.getOptions())) {
             gen.writeString(member);
           }
           gen.writeEndArray();
+          break;
+        case WORD:
+          gen.writeString(ColumnOptions.getWordValue(column.getOptions()));
           break;
         case PRODUCT_NAME:
           product = (product == null) ? randomizer.randomProductRecord() : product;
@@ -137,6 +139,44 @@ public class GeneratorSerializer extends JsonSerializer<Table> {
         case PRODUCT_TYPE:
           product = (product == null) ? randomizer.randomProductRecord() : product;
           gen.writeString(product.category);
+          break;
+        case AIRPORT_ORIG_CODE:
+          airportOrig = (airportOrig == null) ? randomizer.randomAirportRecord() : airportOrig;
+          gen.writeString(airportOrig.code);
+          break;
+        case AIRPORT_ORIG_NAME:
+          airportOrig = (airportOrig == null) ? randomizer.randomAirportRecord() : airportOrig;
+          gen.writeString(airportOrig.name);
+          break;
+        case AIRPORT_ORIG_CITY:
+          airportOrig = (airportOrig == null) ? randomizer.randomAirportRecord() : airportOrig;
+          gen.writeString(airportOrig.city);
+          break;
+        case AIRPORT_DEST_CODE:
+          airportDest = (airportDest == null) ? randomizer.randomAirportRecord() : airportDest;
+          gen.writeString(airportDest.code);
+          break;
+        case AIRPORT_DEST_NAME:
+          airportDest = (airportDest == null) ? randomizer.randomAirportRecord() : airportDest;
+          gen.writeString(airportDest.name);
+          break;
+        case AIRPORT_DEST_CITY:
+          airportDest = (airportDest == null) ? randomizer.randomAirportRecord() : airportDest;
+          gen.writeString(airportDest.city);
+          break;
+        case AIRLINE_CODE:
+          airline = (airline == null) ? randomizer.randomAirlineRecord() : airline;
+          gen.writeString(airline.code);
+          break;
+        case AIRLINE_NAME:
+          airline = (airline == null) ? randomizer.randomAirlineRecord() : airline;
+          gen.writeString(airline.name);
+          break;
+        case BOOKING_CODE:
+          gen.writeString(randomizer.randomBookingCode());
+          break;
+        case CABIN_CODE:
+          gen.writeString(randomizer.randomCabinCode());
           break;
         default:
           LOGGER.warn("Unknown column type: {}", column.type);

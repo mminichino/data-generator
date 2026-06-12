@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSchemaStore } from '../store/SchemaStore';
 import { getUserId } from '../lib/utils';
 
-type DbType = 'redis' | 'postgres' | 'mysql' | 'sqlite' | 'sqlserver';
+type DbType = 'redis' | 'postgres' | 'mysql' | 'sqlite' | 'sqlserver' | 'couchbase';
 
 export default function ConnectionPage() {
   const { connection, setConnection } = useSchemaStore();
@@ -15,8 +15,11 @@ export default function ConnectionPage() {
   const [password, setPassword] = useState<string>(connection?.password || '');
   const [database, setDatabase] = useState<string>(connection?.database || '0');
   const [schema, setSchema] = useState<string>(connection?.schema || '');
+  const [scope, setScope] = useState<string>(connection?.scope || '_default');
+  const [collection, setCollection] = useState<string>(connection?.collection || '_default');
   const [useSsl, setUseSsl] = useState<boolean>(connection?.ssl || false);
   const [useJson, setUseJson] = useState<boolean>(connection?.json || false);
+  const [tlsSkipVerify, setTlsSkipVerify] = useState<boolean>(connection?.tlsSkipVerify || false);
 
   const [connected, setConnected] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -36,6 +39,13 @@ export default function ConnectionPage() {
       setUsername(connection?.username || 'postgres');
       setDatabase(connection?.database || '');
       setSchema(connection?.schema || 'public');
+    } else if (type === 'couchbase') {
+      setPort(connection?.port?.toString() || '8091');
+      setUsername(connection?.username || 'Administrator');
+      setDatabase(connection?.database || 'default');
+      setScope(connection?.scope || '_default');
+      setCollection(connection?.collection || '_default');
+      setSchema('');
     }
   }, [type]);
 
@@ -70,8 +80,11 @@ export default function ConnectionPage() {
         password,
         database,
         schema,
+        scope,
+        collection,
         useSsl,
         useJson,
+        tlsSkipVerify,
       };
       setConnection(payload);
       const res = await fetch(`/api/database/connect?target=${type}`, {
@@ -143,6 +156,7 @@ export default function ConnectionPage() {
                       disabled={connected || loading}
                     >
                       <option value="redis">redis</option>
+                      <option value="couchbase">couchbase</option>
                       <option value="postgres">postgres</option>
                     </select>
                   </div>
@@ -153,7 +167,7 @@ export default function ConnectionPage() {
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="localhost"
+                      placeholder={type === 'couchbase' ? '127.0.0.1' : 'localhost'}
                       value={hostname}
                       onChange={(e) => setHostname(e.target.value)}
                       disabled={connected || loading}
@@ -169,7 +183,7 @@ export default function ConnectionPage() {
                     <input
                       type="number"
                       className="form-control"
-                      placeholder={type === 'redis' ? '6379' : '5432'}
+                      placeholder={type === 'redis' ? '6379' : type === 'couchbase' ? '8091' : '5432'}
                       value={port}
                       onChange={(e) => setPort(e.target.value)}
                       disabled={connected || loading}
@@ -182,7 +196,7 @@ export default function ConnectionPage() {
                     <input
                       type="text"
                       className="form-control"
-                      placeholder={type === 'redis' ? 'default' : 'postgres'}
+                      placeholder={type === 'redis' ? 'default' : type === 'couchbase' ? 'Administrator' : 'postgres'}
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       disabled={connected || loading}
@@ -207,30 +221,61 @@ export default function ConnectionPage() {
               <div className="row">
                 <div className="col-md-4">
                   <div className="form-group mb-3">
-                    <label className="form-label">Database</label>
+                    <label className="form-label">{type === 'couchbase' ? 'Bucket' : 'Database'}</label>
                     <input
                       type="text"
                       className="form-control"
-                      placeholder={type === 'redis' ? '0' : ''}
+                      placeholder={type === 'redis' ? '0' : type === 'couchbase' ? 'default' : ''}
                       value={database}
                       onChange={(e) => setDatabase(e.target.value)}
                       disabled={connected || loading}
                     />
                   </div>
                 </div>
-                <div className="col-md-4">
-                  <div className="form-group mb-3">
-                    <label className="form-label">Schema</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder=""
-                      value={schema}
-                      onChange={(e) => setSchema(e.target.value)}
-                      disabled={connected || loading}
-                    />
+                {type === 'couchbase' ? (
+                  <>
+                    <div className="col-md-4">
+                      <div className="form-group mb-3">
+                        <label className="form-label">Scope</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="_default"
+                          value={scope}
+                          onChange={(e) => setScope(e.target.value)}
+                          disabled={connected || loading}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="form-group mb-3">
+                        <label className="form-label">Collection</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="_default"
+                          value={collection}
+                          onChange={(e) => setCollection(e.target.value)}
+                          disabled={connected || loading}
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="col-md-4">
+                    <div className="form-group mb-3">
+                      <label className="form-label">Schema</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder=""
+                        value={schema}
+                        onChange={(e) => setSchema(e.target.value)}
+                        disabled={connected || loading}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="col-md-4 d-flex align-items-end">
                   <div className="form-group mb-3 form-check">
                     <input
@@ -241,8 +286,22 @@ export default function ConnectionPage() {
                       onChange={(e) => setUseSsl(e.target.checked)}
                       disabled={connected || loading}
                     />
-                    <label htmlFor="useSsl" className="form-check-label">UseSSL</label>
+                    <label htmlFor="useSsl" className="form-check-label">Use TLS</label>
                   </div>
+                  {type === 'couchbase' && useSsl && (
+                    <div className="form-group mb-3 form-check" style={{ marginLeft: '1rem' }}>
+                      <input
+                        id="tlsSkipVerify"
+                        type="checkbox"
+                        className="form-check-input me-2"
+                        checked={tlsSkipVerify}
+                        onChange={(e) => setTlsSkipVerify(e.target.checked)}
+                        disabled={connected || loading}
+                      />
+                      <label htmlFor="tlsSkipVerify" className="form-check-label">Skip TLS Verify</label>
+                    </div>
+                  )}
+                  {type === 'redis' && (
                   <div className="form-group mb-3 form-check" style={{ marginLeft: '1rem' }}>
                     <input
                         id="useJson"
@@ -254,6 +313,7 @@ export default function ConnectionPage() {
                     />
                     <label htmlFor="useJson" className="form-check-label">JSON</label>
                   </div>
+                  )}
                 </div>
               </div>
 
