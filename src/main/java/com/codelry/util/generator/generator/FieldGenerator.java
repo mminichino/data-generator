@@ -1,8 +1,6 @@
 package com.codelry.util.generator.generator;
 
-import com.codelry.util.generator.db.AddressRecord;
-import com.codelry.util.generator.db.NameRecord;
-import com.codelry.util.generator.db.ProductRecord;
+import com.codelry.util.generator.db.*;
 import com.codelry.util.generator.dto.*;
 import com.codelry.util.generator.randomizer.Randomizer;
 import org.apache.logging.log4j.LogManager;
@@ -14,11 +12,15 @@ public class FieldGenerator {
   private NameRecord name;
   private AddressRecord address;
   private ProductRecord product;
+  private AirportRecord airport;
+  private AirlineRecord airline;
 
   public void init() {
     this.name = randomizer.randomNameRecord();
     this.address = randomizer.randomAddressRecord();
     this.product = randomizer.randomProductRecord();
+    this.airport = randomizer.randomAirportRecord();
+    this.airline = randomizer.randomAirlineRecord();
   }
 
   public Field generate(FieldDefinition definition, long index) {
@@ -108,6 +110,21 @@ public class FieldGenerator {
         break;
       case PRODUCT_TYPE:
         field.setValue(product.category);
+        break;
+      case AIRLINE_CODE:
+        field.setValue(airline.code);
+        break;
+      case AIRPORT_CODE:
+        field.setValue(airport.code);
+        break;
+      case AIRLINE_NAME:
+        field.setValue(airline.name);
+        break;
+      case AIRPORT_NAME:
+        field.setValue(airport.name);
+        break;
+      case AIRPORT_CITY:
+        field.setValue(airport.city);
         break;
       default:
         LOGGER.warn("Unknown column type: {}", definition.getType());

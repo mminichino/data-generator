@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.input.Prompt;
@@ -20,9 +19,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-
-import static dev.langchain4j.model.openai.OpenAiChatModelName.GPT_5;
+import java.util.Set;
 
 public class GenerateIdentityData {
   private static final Logger LOGGER = LogManager.getLogger(GenerateIdentityData.class);
@@ -30,7 +29,7 @@ public class GenerateIdentityData {
   private static final TypeFactory typeFactory = mapper.getTypeFactory();
   static OpenAiChatModel model = OpenAiChatModel.builder()
       .apiKey(ApiKeys.OPENAI_API_KEY)
-      .modelName(GPT_5)
+      .modelName("gpt-5.4")
       .timeout(Duration.ofSeconds(180))
       .maxCompletionTokens(10240)
       .listeners(List.of(new TelemetryListener()))
@@ -48,6 +47,14 @@ public class GenerateIdentityData {
 
   public List<JsonNode> generateProducts(int iterations, int count, String department) {
     return ProductRecord.run(iterations, count, department);
+  }
+
+  public List<JsonNode> generateAirports() {
+    return AirportRecord.run();
+  }
+
+  public List<JsonNode> generateAirlines() {
+    return AirlineRecord.run();
   }
 
   static class SimpleNameRecord {
@@ -220,6 +227,194 @@ public class GenerateIdentityData {
 
       progress.newLine();
       return new ArrayList<>(productList.subList(0, total));
+    }
+  }
+
+  static class AirportRecord {
+
+    private static String createAirportPrompt() {
+      return """
+          Generate a list of commercial airports that support passenger travel as a JSON array.
+          Only include airports that support scheduled flight services to the general public.
+          Do not include any airports that only support private aviation or do not have gates supporting commercial carriers.
+          Return ONLY the JSON array, no other text.
+
+          Each item must be an object:
+          {
+            iata: (text) The three character IATA airport code,
+            city: (text) The city served by the airport,
+            name: (text) The official airport name,
+          }
+
+          Return as many airports as fit within your response limit, ordered alphabetically by IATA code.
+          """;
+    }
+
+    private static String continueAirportPrompt(String lastIataCode) {
+      return """
+          Continue generating commercial airports that support passenger travel as a JSON array.
+          Only include airports with IATA codes alphabetically after %s.
+          Only include airports that support scheduled flight services to the general public.
+          Do not include any airports that only support private aviation or do not have gates supporting commercial carriers.
+          Return ONLY the JSON array, no other text. If there are no more airports to add, return an empty JSON array [].
+
+          Each item must be an object:
+          {
+            iata: (text) The three character IATA airport code,
+            city: (text) The city served by the airport,
+            name: (text) The official airport name,
+          }
+
+          Continue alphabetically by IATA code.
+          """.formatted(lastIataCode);
+    }
+
+    public static List<JsonNode> run() {
+      LOGGER.debug("Generating airport records");
+      List<JsonNode> airportList = new ArrayList<>();
+      Set<String> seenCodes = new HashSet<>();
+
+      boolean firstBatch = true;
+      String lastIataCode = "";
+      while (true) {
+        try {
+          LOGGER.debug("Sending airport prompt to LLM");
+          String prompt = firstBatch
+              ? createAirportPrompt()
+              : continueAirportPrompt(lastIataCode);
+
+          String answer = model.chat(prompt);
+          if (answer == null) {
+            LOGGER.debug("LLM returned null generating airports, retrying");
+            continue;
+          }
+
+          firstBatch = false;
+
+          List<JsonNode> batch = JsonUtils.parseJsonArray(answer);
+          if (batch.isEmpty()) {
+            break;
+          }
+
+          int added = 0;
+          for (JsonNode airport : batch) {
+            JsonNode iataNode = airport.get("iata");
+            if (iataNode != null && iataNode.isTextual() && seenCodes.add(iataNode.asText())) {
+              airportList.add(airport);
+              lastIataCode = iataNode.asText();
+              added++;
+            }
+          }
+
+          LOGGER.debug("Added {} airports ({} total)", added, airportList.size());
+
+          if (added == 0) {
+            break;
+          }
+        } catch (TimeoutException t) {
+          LOGGER.debug("Timeout in getting LLM airports response, retrying");
+        } catch (JsonProcessingException e) {
+          LOGGER.debug("Failed to parse LLM airports response, retrying");
+        } catch (Exception e) {
+          LOGGER.error(e.getMessage(), e);
+          return airportList;
+        }
+      }
+
+      return airportList;
+    }
+  }
+
+  static class AirlineRecord {
+
+    private static String createAirlinePrompt() {
+      return """
+          Generate a list of commercial airlines that support passenger travel as a JSON array.
+          Only include airlines that support scheduled flight services to the general public.
+          Do not include any airlines that only provide private aviation or do not have gates supporting commercial passengers.
+          Return ONLY the JSON array, no other text.
+
+          Each item must be an object:
+          {
+            iata: (text) The two character IATA airline code,
+            name: (text) The official airline name
+          }
+
+          Return as many airlines as fit within your response limit, ordered alphabetically by IATA code.
+          """;
+    }
+
+    private static String continueAirlinePrompt(String lastIataCode) {
+      return """
+          Continue generating commercial airlines that support passenger travel as a JSON array.
+          Only include airlines with IATA codes alphabetically after %s.
+          Only include airlines that provide scheduled flight services to the general public.
+          Do not include any airlines that only provide private aviation or do not have gates supporting commercial passengers.
+          Return ONLY the JSON array, no other text. If there are no more airlines to add, return an empty JSON array [].
+
+          Each item must be an object:
+          {
+            iata: (text) The two character IATA airline code,
+            name: (text) The official airline name,
+          }
+
+          Continue alphabetically by IATA code.
+          """.formatted(lastIataCode);
+    }
+
+    public static List<JsonNode> run() {
+      LOGGER.debug("Generating airline records");
+      List<JsonNode> airlineList = new ArrayList<>();
+      Set<String> seenCodes = new HashSet<>();
+
+      boolean firstBatch = true;
+      String lastIataCode = "";
+      while (true) {
+        try {
+          LOGGER.debug("Sending airline prompt to LLM");
+          String prompt = firstBatch
+              ? createAirlinePrompt()
+              : continueAirlinePrompt(lastIataCode);
+
+          String answer = model.chat(prompt);
+          if (answer == null) {
+            LOGGER.debug("LLM returned null generating airline, retrying");
+            continue;
+          }
+
+          firstBatch = false;
+
+          List<JsonNode> batch = JsonUtils.parseJsonArray(answer);
+          if (batch.isEmpty()) {
+            break;
+          }
+
+          int added = 0;
+          for (JsonNode airline : batch) {
+            JsonNode iataNode = airline.get("iata");
+            if (iataNode != null && iataNode.isTextual() && seenCodes.add(iataNode.asText())) {
+              airlineList.add(airline);
+              lastIataCode = iataNode.asText();
+              added++;
+            }
+          }
+
+          LOGGER.debug("Added {} airline ({} total)", added, airlineList.size());
+
+          if (added == 0) {
+            break;
+          }
+        } catch (TimeoutException t) {
+          LOGGER.debug("Timeout in getting LLM airline response, retrying");
+        } catch (JsonProcessingException e) {
+          LOGGER.debug("Failed to parse LLM airline response, retrying");
+        } catch (Exception e) {
+          LOGGER.error(e.getMessage(), e);
+          return airlineList;
+        }
+      }
+
+      return airlineList;
     }
   }
 }

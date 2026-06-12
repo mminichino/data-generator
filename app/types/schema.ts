@@ -24,6 +24,11 @@ export type ColumnType =
     | 'manufacturer'
     | 'timestamp'
     | 'date'
+    | 'airportCode'
+    | 'airportName'
+    | 'airportCity'
+    | 'airlineCode'
+    | 'airlineName'
     | 'ipAddress'
     | 'macAddress';
 
@@ -62,7 +67,7 @@ export interface SchemaCollection {
 }
 
 export interface DatabaseConnection {
-    type: 'redis' | 'postgres' | 'mysql' | 'sqlite' | 'sqlserver';
+    type: 'redis' | 'postgres' | 'mysql' | 'sqlite' | 'sqlserver' | 'couchbase';
     hostname: string;
     port: number;
     database: string;
@@ -71,6 +76,7 @@ export interface DatabaseConnection {
     password: string;
     ssl?: boolean;
     json?: boolean;
+    tlsSkipVerify?: boolean;
 }
 
 export interface GenerateDataRequest {

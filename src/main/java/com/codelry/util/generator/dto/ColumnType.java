@@ -31,6 +31,11 @@ public enum ColumnType {
   IP_ADDRESS("ipAddress"),
   MAC_ADDRESS("macAddress"),
   SET("set"),
+  AIRLINE_CODE("airlineCode"),
+  AIRLINE_NAME("airlineName"),
+  AIRPORT_CODE("airportCode"),
+  AIRPORT_NAME("airportName"),
+  AIRPORT_CITY("airportCity"),
   UNKNOWN("unknown");
 
   private final String text;

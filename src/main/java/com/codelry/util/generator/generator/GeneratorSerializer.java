@@ -1,8 +1,6 @@
 package com.codelry.util.generator.generator;
 
-import com.codelry.util.generator.db.AddressRecord;
-import com.codelry.util.generator.db.NameRecord;
-import com.codelry.util.generator.db.ProductRecord;
+import com.codelry.util.generator.db.*;
 import com.codelry.util.generator.dto.Column;
 import com.codelry.util.generator.dto.Table;
 import com.codelry.util.generator.randomizer.Randomizer;
@@ -27,6 +25,8 @@ public class GeneratorSerializer extends JsonSerializer<Table> {
     NameRecord name = null;
     AddressRecord address = null;
     ProductRecord product = null;
+    AirportRecord airport = null;
+    AirlineRecord airline = null;
     int digits;
     boolean isDecimal;
     double value;
@@ -137,6 +137,26 @@ public class GeneratorSerializer extends JsonSerializer<Table> {
         case PRODUCT_TYPE:
           product = (product == null) ? randomizer.randomProductRecord() : product;
           gen.writeString(product.category);
+          break;
+        case AIRPORT_CODE:
+          airport = (airport == null) ? randomizer.randomAirportRecord() : airport;
+          gen.writeString(airport.code);
+          break;
+        case AIRPORT_NAME:
+          airport = (airport == null) ? randomizer.randomAirportRecord() : airport;
+          gen.writeString(airport.name);
+          break;
+        case AIRPORT_CITY:
+          airport = (airport == null) ? randomizer.randomAirportRecord() : airport;
+          gen.writeString(airport.city);
+          break;
+        case AIRLINE_CODE:
+          airline = (airline == null) ? randomizer.randomAirlineRecord() : airline;
+          gen.writeString(airline.code);
+          break;
+        case AIRLINE_NAME:
+          airline = (airline == null) ? randomizer.randomAirlineRecord() : airline;
+          gen.writeString(airline.name);
           break;
         default:
           LOGGER.warn("Unknown column type: {}", column.type);

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.codelry.util.generator.data";
+option java_outer_classname = "CouchbaseConnectProto";
+
+package generator.data;
+
+service CouchbaseConnect {
+  rpc Connect (CouchbaseConnectRequest) returns (CouchbaseConnectResponse);
+  rpc Disconnect (CouchbaseDisconnectRequest) returns (CouchbaseDisconnectResponse);
+  rpc Status (CouchbaseStatusRequest) returns (CouchbaseStatusResponse);
+}
+
+message CouchbaseConnectRequest {
+  string userId = 1;
+  string hostname = 2;
+  string username = 3;
+  string password = 4;
+  bool tls = 5;
+  bool tlsSkipVerify = 6;
+  string bucket = 7;
+}
+
+message CouchbaseDisconnectRequest {
+  string userId = 1;
+}
+
+message CouchbaseStatusRequest {
+  string userId = 1;
+}
+
+message CouchbaseConnectResponse {
+  bool success = 1;
+  string status = 2;
+  string message = 3;
+}
+
+message CouchbaseDisconnectResponse {
+  bool success = 1;
+  string status = 2;
+  string message = 3;
+}
+
+message CouchbaseStatusResponse {
+  bool connected = 1;
+}

@@ -161,6 +161,16 @@ public class Randomizer {
     return databaseManager.getProductById(productIndex);
   }
 
+  public AirportRecord randomAirportRecord() {
+    int airportIndex = randomNumber(1, (int) DatabaseManager.airportCount);
+    return databaseManager.getAirportById(airportIndex);
+  }
+
+  public AirlineRecord randomAirlineRecord() {
+    int airlineIndex = randomNumber(1, (int) DatabaseManager.airlineCount);
+    return databaseManager.getAirlineById(airlineIndex);
+  }
+
   public String randomPhoneNumber(String state) {
     List<String> areaCodes = databaseManager.getAreaCodesByState(state);
     int number = randomNumber(1, 9999);

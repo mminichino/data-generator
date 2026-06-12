@@ -125,6 +125,11 @@ export default function ColumnEditor({ column, onSave, onCancel }: ColumnEditorP
                   <option value="productType">Product Type</option>
                   <option value="manufacturer">Manufacturer</option>
                   <option value="date">Date</option>
+                  <option value="airportCode">Airport Code</option>
+                  <option value="airportName">Airport Name</option>
+                  <option value="airportCity">Airport City</option>
+                  <option value="airlineCode">Airline Code</option>
+                  <option value="airlineName">Airline Name</option>
                   <option value="timestamp">Timestamp</option>
                   <option value="ipAddress">IP Address</option>
                   <option value="macAddress">MAC Address</option>
