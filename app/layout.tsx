@@ -42,7 +42,7 @@ export default function RootLayout({
         data-sidebar-position="fixed"
         data-header-position="fixed"
         data-container="wide"
-        direction="ltr"
+        dir="ltr"
       >
         <LayoutChrome>
           {children}
